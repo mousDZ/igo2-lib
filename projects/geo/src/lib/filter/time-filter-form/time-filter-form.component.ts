@@ -10,6 +10,7 @@ import { MatSlider } from '@angular/material';
 import * as moment from 'moment';
 
 import { TimeFilterOptions } from '../shared/time-filter.interface';
+import { Layer } from '../../layer/shared/layers/layer';
 
 @Component({
   selector: 'igo-time-filter-form',
@@ -17,6 +18,15 @@ import { TimeFilterOptions } from '../shared/time-filter.interface';
   styleUrls: ['./time-filter-form.component.scss']
 })
 export class TimeFilterFormComponent implements OnInit {
+  @Input()
+  get layer(): Layer {
+    return this._layer;
+  }
+  set layer(value: Layer) {
+    this._layer = value;
+  }
+  private _layer: Layer;
+
   @Input()
   get options(): TimeFilterOptions {
     return this._options;
