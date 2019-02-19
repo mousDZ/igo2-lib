@@ -10,6 +10,7 @@ import olAttribution from 'ol/control/Attribution';
 
 import { ObjectUtils } from '@igo2/utils';
 import { EsriStyleGenerator } from '../utils/esri-style-generator';
+import { TimeFilterType, TimeFilterStyle } from '../../filter/shared/time-filter.enum';
 
 import {
   WMTSDataSourceOptions,
@@ -237,8 +238,8 @@ export class CapabilitiesService {
         min: min.toUTCString(),
         max: max.toUTCString(),
         range: true,
-        type: 'datetime',
-        style: 'calendar'
+        type: TimeFilterType.DATETIME,
+        style: TimeFilterStyle.CALENDAR
       };
     }
     const params = Object.assign(
@@ -278,8 +279,8 @@ export class CapabilitiesService {
         min: min.toUTCString(),
         max: max.toUTCString(),
         range: true,
-        type: 'datetime',
-        style: 'calendar'
+        type: TimeFilterType.DATETIME,
+        style: TimeFilterStyle.CALENDAR
       };
     }
     const params = Object.assign(

@@ -10,6 +10,7 @@ import { MatSlider } from '@angular/material';
 import * as moment from 'moment';
 
 import { TimeFilterOptions } from '../shared/time-filter.interface';
+import { TimeFilterType, TimeFilterStyle } from '../shared/time-filter.enum';
 import { Layer } from '../../layer/shared/layers/layer';
 
 @Component({
@@ -51,7 +52,7 @@ export class TimeFilterFormComponent implements OnInit {
   @Input()
   set currentValue(value: string) {
     if (value) {
-      if (this.type !== 'year') {
+      if (this.type !== TimeFilterType.YEAR) {
         const valueArray = value.split('/');
         if (valueArray.length > 0) {
           const startDate = new Date(valueArray[0]);
@@ -75,32 +76,32 @@ export class TimeFilterFormComponent implements OnInit {
   yearChange: EventEmitter<string | [string, string]> = new EventEmitter();
   @ViewChild(MatSlider) mySlider;
 
-  get type(): 'date' | 'time' | 'datetime' | 'year' {
-    return this.options.type === undefined ? 'date' : this.options.type;
+  get type(): TimeFilterType {
+    return this.options.type === undefined ? TimeFilterType.DATE : this.options.type;
   }
 
   get isRange(): boolean {
-    return this.options.range === undefined || this.options.style === 'slider'
+    return this.options.range === undefined || this.options.style === TimeFilterStyle.SLIDER
       ? false
       : this.options.range;
   }
 
-  get style(): string {
-    return this.options.style === undefined ? 'slider' : this.options.style;
+  get style(): TimeFilterStyle {
+    return this.options.style === undefined ? TimeFilterStyle.SLIDER : this.options.style;
   }
 
   get step(): number {
     let step = 10800000;
     if (this.options.step === undefined) {
       switch (this.type) {
-        case 'date':
-        case 'datetime':
+        case  TimeFilterType.DATE:
+        case  TimeFilterType.DATETIME:
           step = 10800000;
           break;
-        case 'time':
+        case TimeFilterType.TIME:
           step = 3600000;
           break;
-        case 'year':
+        case  TimeFilterType.YEAR:
           step = 31536000000;
           break;
         default:
@@ -297,13 +298,13 @@ export class TimeFilterFormComponent implements OnInit {
     let label: string;
 
     switch (this.type) {
-      case 'date':
+      case  TimeFilterType.DATE:
         label =
           this.date === undefined
             ? this.min.toDateString()
             : this.date.toDateString();
         break;
-      case 'time':
+      case  TimeFilterType.TIME:
         label =
           this.date === undefined
             ? this.min.toTimeString()
@@ -322,7 +323,7 @@ export class TimeFilterFormComponent implements OnInit {
   }
 
   setupDateOutput() {
-    if (this.style === 'slider') {
+    if (this.style ===  TimeFilterStyle.SLIDER) {
       this.startDate = new Date(this.date);
       this.startDate.setSeconds(-(this.step / 1000));
       this.endDate = new Date(this.startDate);
@@ -345,7 +346,7 @@ export class TimeFilterFormComponent implements OnInit {
 
   applyTypeChange() {
     switch (this.type) {
-      case 'date':
+      case TimeFilterType.DATE:
         if (this.startDate !== undefined || this.endDate !== undefined) {
           this.startDate.setHours(0);
           this.startDate.setMinutes(0);
@@ -355,8 +356,8 @@ export class TimeFilterFormComponent implements OnInit {
           this.endDate.setSeconds(59);
         }
         break;
-      case 'time':
-        if (this.style === 'calendar') {
+      case TimeFilterType.TIME:
+        if (this.style === TimeFilterStyle.CALENDAR) {
           if (this.startDate.getDay() !== this.min.getDay()) {
             const selectedHour = this.startDate.getHours();
             const selectedMinute = this.startDate.getMinutes();
