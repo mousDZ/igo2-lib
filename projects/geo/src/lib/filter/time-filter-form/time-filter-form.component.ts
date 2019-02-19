@@ -174,12 +174,22 @@ export class TimeFilterFormComponent implements OnInit {
         this.endListYears.push(i);
       }
     }
+    this.options.enabled = this.options.enabled === undefined ? true : this.options.enabled;
+    this.checkFilterValue();
+    if (this.options.enabled) {
+      if (!this.isRange && this.style === 'slider' && this.type === 'year') {
+        this.yearChange.emit(this.year);
+      }
+    } else {
+      this.storeCurrentFilterValue();
+      this.yearChange.emit(undefined); // TODO: FIX THIS for ALL OTHER TYPES STYLES OR RANGE.
+    }
   }
 
   storeCurrentFilterValue() {
     // TODO: FIX THIS for ALL OTHER TYPES STYLES OR RANGE.
     if (!this.isRange && this.style === TimeFilterStyle.SLIDER && this.type === TimeFilterType.YEAR) {
-      this.options.value = this.year.toString();
+        this.options.value = this.year.toString();
     }
   }
 
@@ -496,6 +506,5 @@ export class TimeFilterFormComponent implements OnInit {
 
   setVisible(event: any) {
     this.layer.visible = true;
-    this.options.enabled = true;
   }
 }
