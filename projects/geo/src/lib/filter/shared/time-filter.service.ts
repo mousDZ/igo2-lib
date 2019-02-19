@@ -74,7 +74,7 @@ export class TimeFilterService {
       if (newdateform_start === newdateform_end) {
         time = newdateform_start;
       }
-    } else if (year) {
+    } else {  // to reset filter.
       time = year;
     }
 
