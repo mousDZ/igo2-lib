@@ -303,17 +303,9 @@ export class QueryService {
     const bboxRaw = searchParams['bbox'];
     const width = parseInt(searchParams['width'], 10);
     const height = parseInt(searchParams['height'], 10);
-    const wmsVersion = searchParams['version'];
-    let xPosition;
-    let yPosition;
-
-    if (wmsVersion === '1.3.0') {
-      xPosition = parseInt(searchParams['i'], 10);
-      yPosition = parseInt(searchParams['j'], 10);
-    } else {
-      xPosition = parseInt(searchParams['x'], 10);
-      yPosition = parseInt(searchParams['y'], 10);
-    }
+    const xPosition = parseInt(searchParams['i'] || searchParams['x'], 10);
+    const yPosition = parseInt(searchParams['j'] || searchParams['y'], 10);
+    const projection = searchParams['crs'] || searchParams['srs'] || 'EPSG:3857';
 
     const bbox = bboxRaw.split(',');
     let threshold =
@@ -397,12 +389,12 @@ export class QueryService {
     return [
       {
         id: uuid(),
-        source: 'title',
+        source: undefined,
         type: FeatureType.Feature,
         format: FeatureFormat.GeoJSON,
-        title: 'title',
+        title: undefined,
         icon: iconHtml,
-        projection: 'EPSG:3857',
+        projection: projection,
         properties: { target: targetIgo2, body: res, url: url },
         geometry: geometry
       }
@@ -430,6 +422,8 @@ export class QueryService {
     delete properties['geometry'];
     delete properties['boundedBy'];
     delete properties['shape'];
+    delete properties['SHAPE'];
+    delete properties['the_geom'];
 
     let geometry;
     if (featureGeometry !== undefined) {
