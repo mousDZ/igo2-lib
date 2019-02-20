@@ -154,7 +154,7 @@ export class WMSDataSource extends DataSource {
     return Md5.hashStr(chain) as string;
   }
 
-  getLegend(): DataSourceLegendOptions[] {
+  getLegend(style?: string): DataSourceLegendOptions[] {
     let legend = super.getLegend();
     if (legend.length > 0) {
       return legend;
@@ -167,7 +167,14 @@ export class WMSDataSource extends DataSource {
       layers = sourceParams.layers.split(',');
     }
 
-    const baseUrl = this.options.url.replace(/\?$/, '');
+    console.log('getlegend', style );
+    if (!style) {
+      style = '';
+    } else {
+      style = `style=${style}`;
+    }
+    const baseUrl
+     = this.options.url.replace(/\?$/, '');
     const params = [
       'REQUEST=GetLegendGraphic',
       'SERVICE=wms',
