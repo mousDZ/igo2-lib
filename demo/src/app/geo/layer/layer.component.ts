@@ -80,7 +80,7 @@ export class AppLayerComponent {
       .subscribe(dataSource => {
         const layer: LayerOptions = {
           title: 'WFS ',
-          visible: true,
+          visible: false,
           source: dataSource
         };
         this.map.addLayer(this.layerService.createLayer(layer));
@@ -118,11 +118,11 @@ export class AppLayerComponent {
       this.layerService
       .createAsyncLayer({
         title: 'nurc:Arc_Sample',
-        visible: false,
+        visible: true,
         sourceOptions: {
           type: 'wms',
           url: '/geoserver/ows',
-          styles: [{name: 'rain', title: 'rain'}, {name: 'raster', title: 'Défaut'}],
+          styles: [{name: 'rain', title: 'Pluie'}, {name: 'raster', title: 'Défaut'}],
           params: {
             layers: 'nurc:Arc_Sample',
             version: '1.3.0'
@@ -165,6 +165,7 @@ export class AppLayerComponent {
       .subscribe(dataSource => {
         const layer: LayerOptionsWithMetadata = {
           title: 'Embâcle',
+          visible: false,
           source: dataSource,
           metadata: {
             url:

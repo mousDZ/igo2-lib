@@ -1,7 +1,6 @@
 import { Component, Input, ChangeDetectionStrategy, OnInit } from '@angular/core';
 
 import { Layer } from '../shared/layers';
-import { WMSDataSourceOptions } from '@igo2/geo/lib/datasource/shared/datasources/wms-datasource.interface';
 
 @Component({
   selector: 'igo-layer-legend',

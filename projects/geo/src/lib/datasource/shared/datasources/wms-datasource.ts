@@ -180,6 +180,7 @@ export class WMSDataSource extends DataSource {
       'SERVICE=wms',
       'FORMAT=image/png',
       'SLD_VERSION=1.1.0',
+      style,
       `VERSION=${sourceParams.version || '1.3.0'}`
     ];
 
