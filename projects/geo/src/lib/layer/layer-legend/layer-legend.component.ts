@@ -1,6 +1,7 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, OnInit } from '@angular/core';
 
 import { Layer } from '../shared/layers';
+import { WMSDataSourceOptions } from '@igo2/geo/lib/datasource/shared/datasources/wms-datasource.interface';
 
 @Component({
   selector: 'igo-layer-legend',
@@ -8,7 +9,7 @@ import { Layer } from '../shared/layers';
   styleUrls: ['./layer-legend.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class LayerLegendComponent {
+export class LayerLegendComponent implements OnInit {
   @Input()
   get layer(): Layer {
     return this._layer;
@@ -26,6 +27,24 @@ export class LayerLegendComponent {
     return this._legend;
   }
   private _legend;
+  public currentWmsStyle = '';
 
   constructor() {}
+
+  ngOnInit(): void {
+    if ((this.layer.options.sourceOptions as any).styles) {
+      this.currentWmsStyle = (this.layer.options.sourceOptions as any).styles[0].name;
+    }
+  }
+
+  listStyles() {
+    return (this.layer.options.sourceOptions as any).styles;
+  }
+
+  changeStyle() {
+    console.log(this.currentWmsStyle);
+    this._legend = this.layer.dataSource.getLegend(this.currentWmsStyle);
+    this.layer.dataSource.ol.updateParams({STYLES: this.currentWmsStyle});
+  }
+
 }

@@ -14,7 +14,12 @@
     </mat-icon>
     <h4 matLine>{{item.title}}</h4>
   </mat-list-item>
-
+  <mat-list-item>
+    <mat-select tooltip-position="below" matTooltipShowDelay="500" [matTooltip]="'igo.geo.sourceFields.selectField' | translate"
+      [(ngModel)]="currentWmsStyle" (selectionChange)="changeStyle()">
+      <mat-option *ngFor="let style of listStyles()" [value]="style.name">{{style.title}}</mat-option>
+    </mat-select>
+  </mat-list-item>
   <div #legend class="igo-layer-legend" [ngClass]="{'with-title': item.title}">
     <img
       *ngIf="item.url"
