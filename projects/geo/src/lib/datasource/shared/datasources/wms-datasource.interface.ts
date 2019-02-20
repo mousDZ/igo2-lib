@@ -16,6 +16,7 @@ export interface WMSDataSourceOptions extends DataSourceOptions {
   ratio?: number;
   ol?: olSourceImageWMS;
   refreshIntervalSec?: number;
+  styles?: WmsStylesParams[];
 }
 
 export interface WMSDataSourceOptionsParams {
@@ -23,3 +24,8 @@ export interface WMSDataSourceOptionsParams {
   version?: string;
   time?: string;
 }
+
+export interface WmsStylesParams {
+  name: any;
+  title?: any;
+  }
