@@ -17,12 +17,20 @@ import { AppMediaModule } from './core/media/media.module';
 import { AppMessageModule } from './core/message/message.module';
 import { AppRequestModule } from './core/request/request.module';
 
+import { AppActionModule } from './common/action/action.module';
+import { AppDynamicComponentModule } from './common/dynamic-component/dynamic-component.module';
+import { AppEntityTableModule } from './common/entity-table/entity-table.module';
+import { AppFormModule } from './common/form/form.module';
+import { AppTableModule } from './common/table/table.module';
+import { AppWidgetModule } from './common/widget/widget.module';
+
 import { AppAuthFormModule } from './auth/auth-form/auth-form.module';
 
 import { AppSimpleMapModule } from './geo/simple-map/simple-map.module';
 import { AppLayerModule } from './geo/layer/layer.module';
 import { AppOverlayModule } from './geo/overlay/overlay.module';
 import { AppFeatureModule } from './geo/feature/feature.module';
+import { AppGeometryModule } from './geo/geometry/geometry.module';
 import { AppQueryModule } from './geo/query/query.module';
 import { AppCatalogModule } from './geo/catalog/catalog.module';
 import { AppSearchModule } from './geo/search/search.module';
@@ -55,12 +63,20 @@ import { AppComponent } from './app.component';
     AppMessageModule,
     AppRequestModule,
 
+    AppActionModule,
+    AppDynamicComponentModule,
+    AppEntityTableModule,
+    AppFormModule,
+    AppTableModule,
+    AppWidgetModule,
+
     AppAuthFormModule,
 
     AppSimpleMapModule,
     AppLayerModule,
     AppOverlayModule,
     AppFeatureModule,
+    AppGeometryModule,
     AppQueryModule,
     AppCatalogModule,
     AppSearchModule,
