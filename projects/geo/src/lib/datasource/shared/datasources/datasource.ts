@@ -24,7 +24,7 @@ export abstract class DataSource {
 
   protected abstract generateId(): string;
 
-  getLegend(): DataSourceLegendOptions[] {
+  getLegend(style?: string): DataSourceLegendOptions[] {
     return this.options.legend ? [this.options.legend] : [];
   }
 }
