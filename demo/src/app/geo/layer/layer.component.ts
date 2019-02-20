@@ -115,6 +115,22 @@ export class AppLayerComponent {
       })
       .subscribe(l => this.map.addLayer(l));
 
+      this.layerService
+      .createAsyncLayer({
+        title: 'nurc:Arc_Sample',
+        visible: false,
+        sourceOptions: {
+          type: 'wms',
+          url: '/geoserver/ows',
+          styles: [{name: 'rain', title: 'rain'}, {name: 'raster', title: 'Défaut'}],
+          params: {
+            layers: 'nurc:Arc_Sample',
+            version: '1.3.0'
+          }
+        }
+      })
+      .subscribe(l => this.map.addLayer(l));
+
     this.layerService
       .createAsyncLayer({
         title: 'Avertissements routier',
