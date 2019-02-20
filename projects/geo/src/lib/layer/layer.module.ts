@@ -6,6 +6,7 @@ import {
   MatFormFieldModule,
   MatIconModule,
   MatButtonModule,
+  MatSelectModule,
   MatTooltipModule,
   MatListModule,
   MatSliderModule
@@ -34,6 +35,7 @@ import { LayerListBindingDirective } from './layer-list/layer-list-binding.direc
     FormsModule,
     MatIconModule,
     MatButtonModule,
+    MatSelectModule,
     MatTooltipModule,
     MatListModule,
     MatSliderModule,
