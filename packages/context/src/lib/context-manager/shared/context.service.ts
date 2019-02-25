@@ -31,10 +31,7 @@ import {
   providedIn: 'root'
 })
 export class ContextService {
-  public context$ = new BehaviorSubject<DetailedContext>(undefined);
-  public contexts$ = new BehaviorSubject<ContextsList>({ ours: [] });
-  public defaultContextId$ = new BehaviorSubject<string>(undefined);
-  public editedContext$ = new BehaviorSubject<DetailedContext>(undefined);
+
   private mapViewFromRoute: ContextMapView = {};
   private options: ContextServiceOptions;
   private baseUrl: string;
@@ -46,32 +43,13 @@ export class ContextService {
     private config: ConfigService,
     @Optional() private route: RouteService
   ) {
-    this.options = Object.assign(
-      {
-        basePath: 'contexts',
-        contextListFile: '_contexts.json',
-        defaultContextUri: '_default'
-      },
-      this.config.getConfig('context')
-    );
-
+    this.options = Object.assign({
+      basePath: 'contexts',
+      contextListFile: '_contexts.json',
+      defaultContextUri: '_default'
+    }, this.config.getConfig('context'));
     this.baseUrl = this.options.url;
-
     this.readParamsFromRoute();
-
-    this.authService.authenticate$.subscribe(authenticated => {
-      if (authenticated === null) {
-        this.loadDefaultContext();
-        return;
-      }
-      const contexts$$ = this.contexts$.subscribe(contexts => {
-        if (contexts$$) {
-          contexts$$.unsubscribe();
-          this.handleContextsChange(contexts);
-        }
-      });
-      this.loadContexts();
-    });
   }
 
   get(): Observable<ContextsList> {
@@ -93,11 +71,7 @@ export class ContextService {
 
   getDefault(): Observable<DetailedContext> {
     const url = this.baseUrl + '/contexts/default';
-    return this.http.get<DetailedContext>(url).pipe(
-      tap(context => {
-        this.defaultContextId$.next(context.id);
-      })
-    );
+    return this.http.get<DetailedContext>(url);
   }
 
   setDefault(id: string): Observable<any> {
@@ -107,16 +81,7 @@ export class ContextService {
 
   delete(id: string): Observable<void> {
     const url = this.baseUrl + '/contexts/' + id;
-    return this.http.delete<void>(url).pipe(
-      tap(res => {
-        const contexts: ContextsList = { ours: [] };
-        Object.keys(this.contexts$.value).forEach(
-          key =>
-            (contexts[key] = this.contexts$.value[key].filter(c => c.id !== id))
-        );
-        this.contexts$.next(contexts);
-      })
-    );
+    return this.http.delete<void>(url);
   }
 
   create(context: DetailedContext): Observable<Context> {
@@ -128,8 +93,6 @@ export class ContextService {
         } else {
           contextCreated.permission = TypePermission[TypePermission.read];
         }
-        this.contexts$.value.ours.push(contextCreated);
-        this.contexts$.next(this.contexts$.value);
         return contextCreated;
       })
     );
@@ -140,15 +103,13 @@ export class ContextService {
     return this.http.post<Context>(url, JSON.stringify(properties)).pipe(
       map(contextCloned => {
         contextCloned.permission = TypePermission[TypePermission.write];
-        this.contexts$.value.ours.push(contextCloned);
-        this.contexts$.next(this.contexts$.value);
         return contextCloned;
       })
     );
   }
 
-  update(id: string, context: Context): Observable<Context> {
-    const url = this.baseUrl + '/contexts/' + id;
+  update(context: Context): Observable<Context> {
+    const url = this.baseUrl + '/contexts/' + context.id;
     return this.http.patch<Context>(url, JSON.stringify(context));
   }
 
@@ -200,81 +161,28 @@ export class ContextService {
 
   // ======================================================================
 
-  getLocalContexts(): Observable<ContextsList> {
-    const url = this.getPath(this.options.contextListFile);
-    return this.http.get<ContextsList>(url).pipe(
-      map((res: any) => {
-        return { ours: res };
-      })
-    );
-  }
-
-  getLocalContext(uri): Observable<DetailedContext> {
-    const url = this.getPath(`${uri}.json`);
-    return this.http.get<DetailedContext>(url).pipe(
-      catchError(res => {
-        return this.handleError(res, uri);
-      })
-    );
-  }
-
   loadContexts() {
-    let request;
-    if (this.baseUrl) {
-      request = this.get();
-    } else {
-      request = this.getLocalContexts();
-    }
-    request.subscribe(contexts => {
-      const publicsContexts = this.contexts$.value.public;
+    const request = this.baseUrl ? this.get() : this.getLocalContexts();
+    request.pipe(
+      map((contexts: ContextsList) => {
+        return contexts;
+        /*
+        const publicsContexts = this.contexts$.value.public;
 
-      if (publicsContexts) {
-        const contextUri = publicsContexts.find(
-          c => c.uri === this.options.defaultContextUri
-        );
-        if (contextUri) {
-          if (!contexts.public) {
-            contexts.public = [];
+        if (publicsContexts) {
+          const contextUri = publicsContexts.find(
+            c => c.uri === this.options.defaultContextUri
+          );
+          if (contextUri) {
+            if (!contexts.public) {
+              contexts.public = [];
+            }
+            contexts.public.push(contextUri);
           }
-          contexts.public.push(contextUri);
         }
-      }
-      this.contexts$.next(contexts);
-    });
-  }
-
-  loadDefaultContext() {
-    const loadFct = (direct = false) => {
-      if (!direct && this.baseUrl && this.authService.authenticated) {
-        this.getDefault().subscribe(
-          (_context: DetailedContext) => {
-            this.options.defaultContextUri = _context.uri;
-            this.addContextToList(_context);
-            this.setContext(_context);
-          },
-          () => {
-            this.defaultContextId$.next(undefined);
-            this.loadContext(this.options.defaultContextUri);
-          }
-        );
-      } else {
-        this.loadContext(this.options.defaultContextUri);
-      }
-    };
-
-    if (this.route && this.route.options.contextKey) {
-      this.route.queryParams.pipe(debounceTime(100)).subscribe(params => {
-        const contextParam = params[this.route.options.contextKey as string];
-        let direct = false;
-        if (contextParam) {
-          this.options.defaultContextUri = contextParam;
-          direct = true;
-        }
-        loadFct(direct);
-      });
-    } else {
-      loadFct();
-    }
+        */
+      })
+    );
   }
 
   loadContext(uri: string) {
@@ -292,6 +200,24 @@ export class ContextService {
       err => {
         contexts$$.unsubscribe();
       }
+    );
+  }
+
+  private getLocalContexts(): Observable<ContextsList> {
+    const url = this.getPath(this.options.contextListFile);
+    return this.http.get<ContextsList>(url).pipe(
+      map((res: any) => {
+        return { ours: res };
+      })
+    );
+  }
+
+  private getLocalContext(uri): Observable<DetailedContext> {
+    const url = this.getPath(`${uri}.json`);
+    return this.http.get<DetailedContext>(url).pipe(
+      catchError(res => {
+        return this.handleError(res, uri);
+      })
     );
   }
 
@@ -382,7 +308,7 @@ export class ContextService {
     return context;
   }
 
-  private getContextByUri(uri: string): Observable<DetailedContext> {
+  getContextByUri(uri: string): Observable<DetailedContext> {
     if (this.baseUrl) {
       let contextToLoad;
       for (const key of Object.keys(this.contexts$.value)) {
@@ -396,7 +322,7 @@ export class ContextService {
 
       // TODO : use always id or uri
       const id = contextToLoad ? contextToLoad.id : uri;
-      return this.getDetails(id);
+      const context = this.getDetails(id);
     }
 
     return this.getLocalContext(uri);

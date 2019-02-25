@@ -38,7 +38,6 @@ export class ContextItemComponent {
   @Output() clone = new EventEmitter<DetailedContext>();
   @Output() favorite = new EventEmitter<DetailedContext>();
   @Output() managePermissions = new EventEmitter<DetailedContext>();
-  @Output() manageTools = new EventEmitter<DetailedContext>();
 
   constructor(public auth: AuthService) {}
 }

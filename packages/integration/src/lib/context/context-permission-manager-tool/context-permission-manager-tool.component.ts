@@ -3,14 +3,14 @@ import { Component } from '@angular/core';
 import { ToolComponent } from '@igo2/common';
 
 @ToolComponent({
-  name: 'contextEditor',
+  name: 'permissionsContextManager',
   title: 'igo.integration.tools.contexts',
   icon: 'settings'
 })
 @Component({
-  selector: 'igo-context-editor-tool',
-  templateUrl: './context-editor-tool.component.html'
+  selector: 'igo-context-permission-manager-tool',
+  templateUrl: './context-permission-manager-tool.component.html'
 })
-export class ContextEditorToolComponent {
+export class ContextPermissionManagerToolComponent {
   constructor() {}
 }
