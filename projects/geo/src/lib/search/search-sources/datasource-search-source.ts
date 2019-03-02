@@ -10,6 +10,7 @@ import {
   SourceFeatureType
 } from '../../feature/shared/feature.enum';
 import { Feature } from '../../feature/shared/feature.interface';
+import { QueryFormat } from '../../query/shared/query.enum';
 
 import { SearchSource } from './search-source';
 import { SearchSourceOptions } from './search-source.interface';
@@ -71,6 +72,39 @@ export class DataSourceSearchSource extends SearchSource {
     });
   }
 
+  private getQueryParams(url) {
+    let queryFormat = QueryFormat.GML2;
+    let htmlTarget;
+    const formatOpt = this.options.queryFormat;
+    if (formatOpt) {
+      for (const key in formatOpt) {
+        if (formatOpt.hasOwnProperty(key)) {
+          const value = formatOpt[key];
+          if (value === '*') {
+            queryFormat = QueryFormat[key.toUpperCase()];
+            break;
+          } else if (Array.isArray(value.urls)) {
+            value.urls.forEach((urlOpt) => {
+              if (url.indexOf(urlOpt) !== -1) {
+                queryFormat = QueryFormat[key.toUpperCase()];
+              }
+            });
+            break;
+          }
+        }
+      }
+    }
+
+    if (queryFormat === QueryFormat.HTML) {
+      htmlTarget = 'innerhtml';
+    }
+
+    return {
+      format: queryFormat,
+      htmlTarget
+    };
+  }
+
   private formatResult(result: any): Feature {
     const t = this.languageService.translate;
     const properties = {};
@@ -81,11 +115,14 @@ export class DataSourceSearchSource extends SearchSource {
     properties[t.instant(prefix + 'type')] = result.source.format;
     properties[t.instant(prefix + 'url')] = result.source.url;
 
+    const queryParams: any = this.getQueryParams(result.source.url);
     const layer = {
       title: result.source.title,
       sourceOptions: {
         type: result.source.format,
         url: result.source.url,
+        queryFormat: queryParams.format,
+        queryHtmlTarget: queryParams.htmlTarget,
         params: {
           layers: result.source.name
         }
