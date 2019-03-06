@@ -4,11 +4,13 @@
   border-radius: 0;
 }
 
+.igo-search-selector-checkbox,
 .igo-search-selector-radio-group {
   display: inline-flex;
   flex-direction: column;
 }
 
+.igo-search-selector-checkbox,
 .igo-search-selector-radio-group mat-radio-button {
   margin: $igo-margin;
 }

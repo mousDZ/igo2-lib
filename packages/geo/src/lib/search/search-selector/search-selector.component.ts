@@ -10,13 +10,11 @@ import {
 import { SEARCH_TYPES } from '../shared/search.enums';
 import { SearchSourceService } from '../shared/search-source.service';
 
+export enum SearchTypeChangeAction {
+  Add, Remove, Replace
+}
 /**
- * This component allows a user to select a search type yo enable. In it's
- * current version, only one search type can be selected at once (radio). If
- * this component were to support more than one search source enabled (checkbox),
- * the searchbar component would require a small change to it's
- * placeholder getter. The search source service already supports having
- * more than one search source enabled.
+ * This component allows a user to select search types to enable.
  */
 @Component({
   selector: 'igo-search-selector',
@@ -37,9 +35,17 @@ export class SearchSelectorComponent implements OnInit {
   @Input() enabled: string;
 
   /**
+   * If multiple is false, only one search type can be selected at once (radio).
+   * If multiple is true, the user can select more than one search source to enable (checkbox).
+   */
+  @Input() multiple = true;
+
+  /**
    * Event emitted when the enabled search type changes
    */
   @Output() change = new EventEmitter<string>();
+
+  searchTypeChangeAction = SearchTypeChangeAction;
 
   constructor(private searchSourceService: SearchSourceService) {}
 
@@ -57,7 +63,8 @@ export class SearchSelectorComponent implements OnInit {
    * @param searchType Search type
    * @internal
    */
-  onSearchTypeChange(searchType: string) {
+  onSearchTypeChange(searchType: string, searchTypeChangeAction: SearchTypeChangeAction) {
+    // console.log(searchTypeChangeAction);
     this.enableSearchType(searchType);
   }
 
@@ -79,6 +86,7 @@ export class SearchSelectorComponent implements OnInit {
   private enableSearchType(searchType: string) {
     this.enabled = searchType;
     this.searchSourceService.enableSourcesByType(searchType);
+    // this.searchSourceService.enableSourcesByTypes(searchType);
     this.change.emit(searchType);
   }
 

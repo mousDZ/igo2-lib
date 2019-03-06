@@ -16,13 +16,23 @@
     overlapTrigger="false"
     xPosition="before"
     yPosition="above">
-    <mat-radio-group
+    <mat-radio-group *ngIf="!multiple"
       class="igo-search-selector-radio-group"
       [value]="enabled"
-      (change)="onSearchTypeChange($event.value)">
+      (change)="onSearchTypeChange($event.value, searchTypeChangeAction.Replace)">
       <mat-radio-button *ngFor="let searchType of searchTypes" [value]="searchType">
         {{getSearchTypeTitle(searchType) | translate}}
       </mat-radio-button>
     </mat-radio-group>
+
+    <ng-container *ngIf="multiple">
+      <mat-checkbox *ngFor="let searchType of searchTypes"
+        class="igo-search-selector-checkbox"
+        [value]="enabled"
+        (change)="onSearchTypeChange(searchType, $event.checked ? searchTypeChangeAction.Add : searchTypeChangeAction.Remove)">
+          {{getSearchTypeTitle(searchType) | translate}}
+      </mat-checkbox>
+    </ng-container>
   </mat-menu>
+
 </div>
