@@ -229,11 +229,9 @@ export class QueryService {
         targetIgo2 = '_blank';
         break;
       case 'modal':
-        targetIgo2 = 'modal';
-        iconHtml = 'place';
-        break;
       case 'innerhtml':
-        targetIgo2 = 'innerhtml';
+      case 'iframe':
+        targetIgo2 = htmlTarget;
         iconHtml = 'place';
         const bodyTagStart = res.toLowerCase().indexOf('<body>');
         const bodyTagEnd = res.toLowerCase().lastIndexOf('</body>') + 7;
@@ -330,6 +328,10 @@ export class QueryService {
             FEATURE_COUNT: wmsDatasource.params.feature_count || '5'
           }
         );
+        if (wmsDatasource.params.version !== '1.3.0') {
+          url = url.replace('&I=', '&X=');
+          url = url.replace('&J=', '&Y=');
+        }
         break;
       case CartoDataSource:
         const cartoDatasource = datasource as CartoDataSource;
