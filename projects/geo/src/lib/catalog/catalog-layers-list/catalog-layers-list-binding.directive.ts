@@ -187,7 +187,7 @@ export class CatalogLayersListBindingDirective implements OnInit, OnDestroy {
               const keywordList = layer.KeywordList ? layer.KeywordList : undefined;
               const timeFilterable = timeFilter && Object.keys(timeFilter).length > 0 ? true : false;
               const count = catalog.count ? catalog.count : 5;
-              const queryHtmlTarget = catalog.queryHtmlTarget ? catalog.queryHtmlTarget : 'innerhtml' ;
+              const queryHtmlTarget = catalog.queryHtmlTarget ? catalog.queryHtmlTarget : 'iframe' ;
               arrLayer.push({
                 title: layer.Title,
                 maxResolution: this.getResolutionFromScale(layer.MaxScaleDenominator) || Infinity,
@@ -204,6 +204,7 @@ export class CatalogLayersListBindingDirective implements OnInit, OnDestroy {
                   queryable: layer.queryable,
                   queryFormat: this.retriveLayerInfoFormat(catalog, layer),
                   queryHtmlTarget: queryHtmlTarget,
+                  crossOrigin: catalog.crossOrigin ? 'Anonymous' : undefined,
                   params: {
                     layers: layer.Name,
                     feature_count: count

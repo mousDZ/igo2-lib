@@ -1,3 +1,116 @@
+<a name="0.27.8"></a>
+## [0.27.8](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.7...0.27.8) (2019-03-19)
+
+
+### Bug Fixes
+
+* **share-map:** getUrl must not be executed on component initialization if using the context api ([6ff8061](https://github.com/infra-geo-ouverte/igo2-lib/commit/6ff8061))
+
+
+
+<a name="0.27.7"></a>
+## [0.27.7](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.6...0.27.7) (2019-03-14)
+
+
+### Bug Fixes
+
+* **iframe:** remove sandbox ([c13712e](https://github.com/infra-geo-ouverte/igo2-lib/commit/c13712e))
+
+
+
+<a name="0.27.6"></a>
+## [0.27.6](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.5...0.27.6) (2019-03-14)
+
+
+### Bug Fixes
+
+* **feature-details:** rename innerhtml to iframe ([643a606](https://github.com/infra-geo-ouverte/igo2-lib/commit/643a606))
+
+
+
+<a name="0.27.5"></a>
+## [0.27.5](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.4...0.27.5) (2019-03-13)
+
+
+### Bug Fixes
+
+* **datasource-search-source:** queryable option ([61ecb8e](https://github.com/infra-geo-ouverte/igo2-lib/commit/61ecb8e))
+
+
+
+<a name="0.27.4"></a>
+## [0.27.4](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.3...0.27.4) (2019-03-13)
+
+
+### Features
+
+* **datasource-search-source:** add queryable option ([b5feb23](https://github.com/infra-geo-ouverte/igo2-lib/commit/b5feb23))
+
+
+
+<a name="0.27.3"></a>
+## [0.27.3](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.2...0.27.3) (2019-03-12)
+
+
+### Bug Fixes
+
+* **cors:** add crossOrigin anonymous ([301529c](https://github.com/infra-geo-ouverte/igo2-lib/commit/301529c))
+* **feature-details:** rename innerhtml ([916ee78](https://github.com/infra-geo-ouverte/igo2-lib/commit/916ee78))
+* **iframe:** use cors parameters ([35461da](https://github.com/infra-geo-ouverte/igo2-lib/commit/35461da))
+
+
+
+<a name="0.27.2"></a>
+## [0.27.2](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.1...0.27.2) (2019-03-01)
+
+
+### Bug Fixes
+
+* **search:** datasource set target to innerhtml if html ([749d1d6](https://github.com/infra-geo-ouverte/igo2-lib/commit/749d1d6))
+
+
+
+<a name="0.27.1"></a>
+## [0.27.1](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.0...0.27.1) (2019-03-01)
+
+
+### Features
+
+* **search:** datasource search source can define query format ([4d7d6c6](https://github.com/infra-geo-ouverte/igo2-lib/commit/4d7d6c6))
+
+
+
+<a name="0.27.0"></a>
+# [0.27.0](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.26.2...0.27.0) (2019-02-28)
+
+
+### Bug Fixes
+
+* **analytics:** change piwik to matomo ([8d73e28](https://github.com/infra-geo-ouverte/igo2-lib/commit/8d73e28))
+* **build:** fix build error caused by a bad import in the widget service ([02b52b3](https://github.com/infra-geo-ouverte/igo2-lib/commit/02b52b3))
+* **catalog:** fix import ([e98aefd](https://github.com/infra-geo-ouverte/igo2-lib/commit/e98aefd))
+* **demo:** fix widget ([874ee7d](https://github.com/infra-geo-ouverte/igo2-lib/commit/874ee7d))
+* **demo:** temporarily remove the widget demo ([50952f7](https://github.com/infra-geo-ouverte/igo2-lib/commit/50952f7))
+* **polyfills:** Allow string normalization on IE ([#263](https://github.com/infra-geo-ouverte/igo2-lib/issues/263)) ([0d1154e](https://github.com/infra-geo-ouverte/igo2-lib/commit/0d1154e))
+* **query:** wms version support in query service ([df82157](https://github.com/infra-geo-ouverte/igo2-lib/commit/df82157))
+
+
+### Features
+
+* **action:** action module and actionbar component ([017d97e](https://github.com/infra-geo-ouverte/igo2-lib/commit/017d97e))
+* **catalog:** Catalog enhancement (info_format, count) ([#272](https://github.com/infra-geo-ouverte/igo2-lib/issues/272)) ([98868eb](https://github.com/infra-geo-ouverte/igo2-lib/commit/98868eb))
+* **demo:** add table demo ([3ef98db](https://github.com/infra-geo-ouverte/igo2-lib/commit/3ef98db))
+* **dynamic-component:** dynamic component class and dynamic outlet component ([7b4e90c](https://github.com/infra-geo-ouverte/igo2-lib/commit/7b4e90c))
+* **entity:** merge entity module and add an entity-table demo ([757e45b](https://github.com/infra-geo-ouverte/igo2-lib/commit/757e45b))
+* **entity table:** allow multiple selections ([3b4f1d9](https://github.com/infra-geo-ouverte/igo2-lib/commit/3b4f1d9))
+* **form:** configurable forms ([abad9ab](https://github.com/infra-geo-ouverte/igo2-lib/commit/abad9ab))
+* **geometry:** geometry module and geometry form field ([9f4d86d](https://github.com/infra-geo-ouverte/igo2-lib/commit/9f4d86d))
+* **spinner:** improve spinner behavior ([e360f60](https://github.com/infra-geo-ouverte/igo2-lib/commit/e360f60))
+* **websocket:** Websocket support ([#264](https://github.com/infra-geo-ouverte/igo2-lib/issues/264)) ([8007089](https://github.com/infra-geo-ouverte/igo2-lib/commit/8007089))
+* **widget:** widget module. A widget is a specialez version of a dynamic component ([3da3e34](https://github.com/infra-geo-ouverte/igo2-lib/commit/3da3e34))
+
+
+
 <a name="0.26.2"></a>
 ## [0.26.2](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.26.1...0.26.2) (2019-02-15)
 
