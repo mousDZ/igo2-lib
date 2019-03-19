@@ -1,3 +1,23 @@
+<a name="0.27.9"></a>
+## [0.27.9](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.8...0.27.9) (2019-03-19)
+
+
+### Bug Fixes
+
+* **view:** keepCurrentView ([7d54ee1](https://github.com/infra-geo-ouverte/igo2-lib/commit/7d54ee1))
+
+
+
+<a name="0.27.8"></a>
+## [0.27.8](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.7...0.27.8) (2019-03-19)
+
+
+### Bug Fixes
+
+* **share-map:** getUrl must not be executed on component initialization if using the context api ([6ff8061](https://github.com/infra-geo-ouverte/igo2-lib/commit/6ff8061))
+
+
+
 <a name="0.27.7"></a>
 ## [0.27.7](https://github.com/infra-geo-ouverte/igo2-lib/compare/0.27.6...0.27.7) (2019-03-14)
 
