@@ -71,7 +71,7 @@ export class SidenavComponent {
   }
   private _title: string = this.titleService.getTitle();
 
-  public topPanelState: FlexibleState = 'initial';
+  public topPanelState: FlexibleState = 'expanded';
 
   constructor(public toolService: ToolService, public titleService: Title) {}
 
