@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, DoCheck } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 
 import { Media } from '@igo2/core';
@@ -14,7 +14,7 @@ import olFormatGeoJSON from 'ol/format/GeoJSON';
   templateUrl: './sidenav.component.html',
   styleUrls: ['./sidenav.component.scss']
 })
-export class SidenavComponent {
+export class SidenavComponent implements DoCheck {
   private format = new olFormatGeoJSON();
   @Input()
   get map(): IgoMap {
@@ -72,8 +72,16 @@ export class SidenavComponent {
   private _title: string = this.titleService.getTitle();
 
   public topPanelState: FlexibleState = 'expanded';
+  private previousFeature;
 
   constructor(public toolService: ToolService, public titleService: Title) {}
+
+  ngDoCheck() {
+    if (this.feature && this.previousFeature === undefined) {
+      this.previousFeature = this.feature;
+      this.topPanelState = 'initial';
+    }
+  }
 
   zoomToFeatureExtent() {
     if (this.feature.geometry) {
