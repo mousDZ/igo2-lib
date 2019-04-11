@@ -77,9 +77,10 @@ export class SidenavComponent implements DoCheck {
   constructor(public toolService: ToolService, public titleService: Title) {}
 
   ngDoCheck() {
-    if (this.feature && this.previousFeature === undefined) {
-      this.previousFeature = this.feature;
+    if (this.feature) {
       this.topPanelState = 'initial';
+    } else {
+      this.topPanelState = 'expanded';
     }
   }
 
