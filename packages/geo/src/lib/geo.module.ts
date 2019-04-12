@@ -5,11 +5,11 @@ import { IgoDataSourceModule } from './datasource/datasource.module';
 import { IgoDownloadModule } from './download/download.module';
 import { IgoFeatureModule } from './feature/feature.module';
 import { IgoFilterModule } from './filter/filter.module';
-import { IgoFormModule } from './form/form.module';
 import { IgoGeometryModule } from './geometry/geometry.module';
 import { IgoImportExportModule } from './import-export/import-export.module';
 import { IgoLayerModule } from './layer/layer.module';
 import { IgoMapModule } from './map/map.module';
+import { IgoMeasureModule } from './measure/measure.module';
 import { IgoMetadataModule } from './metadata/metadata.module';
 import { IgoOverlayModule } from './overlay/overlay.module';
 import { IgoPrintModule } from './print/print.module';
@@ -17,6 +17,7 @@ import { IgoQueryModule } from './query/query.module';
 import { IgoRoutingModule } from './routing/routing.module';
 import { IgoSearchModule } from './search/search.module';
 import { IgoToastModule } from './toast/toast.module';
+import { IgoGeoEditionModule } from './edition/edition.module';
 import { IgoWktModule } from './wkt/wkt.module';
 
 @NgModule({
@@ -28,11 +29,11 @@ import { IgoWktModule } from './wkt/wkt.module';
     IgoDownloadModule,
     IgoFeatureModule,
     IgoFilterModule,
-    IgoFormModule,
     IgoGeometryModule,
     IgoImportExportModule,
     IgoLayerModule,
     IgoMapModule,
+    IgoMeasureModule,
     IgoMetadataModule,
     IgoOverlayModule,
     IgoPrintModule,
@@ -40,6 +41,7 @@ import { IgoWktModule } from './wkt/wkt.module';
     IgoRoutingModule,
     IgoSearchModule,
     IgoToastModule,
+    IgoGeoEditionModule,
     IgoWktModule
   ]
 })

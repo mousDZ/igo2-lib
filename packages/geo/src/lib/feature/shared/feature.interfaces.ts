@@ -35,11 +35,21 @@ export interface FeatureStoreOptions extends EntityStoreOptions {
   map: IgoMap;
 }
 
-export interface FeatureStoreSelectionStrategyOptions {
+export interface FeatureStoreStrategyOptions {}
+
+export interface FeatureStoreLoadingStrategyOptions extends FeatureStoreStrategyOptions {
+  getFeatureId?: (Feature) => EntityKey;
+}
+
+export interface FeatureStoreLoadingLayerStrategyOptions extends FeatureStoreStrategyOptions {}
+
+export interface FeatureStoreSelectionStrategyOptions extends FeatureStoreStrategyOptions {
   map: IgoMap;
+  getFeatureId?: (Feature) => EntityKey;
   motion?: FeatureMotion;
   style?: olstyle.Style;
   many?: boolean;
+  hitTolerance?: number;
 }
 
 export interface FeatureFormSubmitEvent {

@@ -4,6 +4,7 @@ import {
   OnInit,
   OnDestroy,
   ChangeDetectionStrategy,
+  ChangeDetectorRef
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
 
@@ -29,9 +30,9 @@ import { GeoJSONGeometry } from '../shared/geometry.interfaces';
 })
 export class GeometryFormFieldComponent implements OnInit, OnDestroy {
 
-  public geometryType$: BehaviorSubject<OlGeometryType> = new BehaviorSubject(undefined);
-  public buffer$: BehaviorSubject<number> = new BehaviorSubject(0);
-  public value$: BehaviorSubject<GeoJSONGeometry> = new BehaviorSubject(undefined);
+  geometryType$: BehaviorSubject<OlGeometryType> = new BehaviorSubject(undefined);
+  drawGuide$: BehaviorSubject<number> = new BehaviorSubject(0);
+  value$: BehaviorSubject<GeoJSONGeometry> = new BehaviorSubject(undefined);
 
   private value$$: Subscription;
 
@@ -48,15 +49,54 @@ export class GeometryFormFieldComponent implements OnInit, OnDestroy {
   /**
    * The geometry type
    */
-  @Input()
-  set geometryType(value: OlGeometryType) { this.geometryType$.next(value); }
-  get geometryType(): OlGeometryType { return this.geometryType$.value; }
+  @Input() geometryType: OlGeometryType;
+
+  /**
+   * Whether a geometry type toggle should be displayed
+   */
+  @Input() geometryTypeField: boolean = false;
+
+  /**
+   * Available geometry types
+   */
+  @Input() geometryTypes: string[] = ['Point', 'LineString', 'Polygon'];
+
+  /**
+   * Whether a draw guide field should be displayed
+   */
+  @Input() drawGuideField: boolean = false;
+
+  /**
+   * The drawGuide around the mouse pointer to help drawing
+   */
+  @Input() drawGuide: number = 0;
+
+  /**
+   * Draw guide placeholder
+   */
+  @Input() drawGuidePlaceholder: string = '';
+
+  /**
+   * The geometry type model
+   */
+  set geometryTypeModel(value: OlGeometryType) {this.geometryType$.next(value); }
+  get geometryTypeModel(): OlGeometryType { return this.geometryType$.value; }
+
+  /**
+   * The draw guide model
+   */
+  set drawGuideModel(value: number) {this.drawGuide$.next(value); }
+  get drawGuideModel(): number { return this.drawGuide$.value; }
+
+  constructor(private cdRef: ChangeDetectorRef) {}
 
   /**
    * Set up a value stream
    * @internal
    */
   ngOnInit() {
+    this.geometryType$.next(this.geometryType);
+    this.drawGuide$.next(this.drawGuide);
     this.value$.next(this.formControl.value ? this.formControl.value : undefined);
     this.value$$ = this.formControl.valueChanges.subscribe((value: GeoJSONGeometry) => {
       this.value$.next(value ? value : undefined);
@@ -71,22 +111,15 @@ export class GeometryFormFieldComponent implements OnInit, OnDestroy {
     this.value$$.unsubscribe();
   }
 
-  /**
-   * The buffer around the mouse pointer to help drawing
-   */
-  @Input()
-  set buffer(value: number) { this.buffer$.next(value); }
-  get buffer(): number { return this.buffer$.value; }
-
   onGeometryTypeChange(geometryType: OlGeometryType) {
     if (this.value$.value !== undefined) {
       return;
     }
-    this.geometryType = geometryType;
+    this.geometryType$.next(geometryType);
   }
 
-  onBufferChange(buffer: number) {
-    this.buffer = buffer;
+  onDrawGuideChange(value: number) {
+    this.drawGuide$.next(value);
   }
 
 }

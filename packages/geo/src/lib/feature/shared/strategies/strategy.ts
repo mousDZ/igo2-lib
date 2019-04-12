@@ -1,3 +1,4 @@
+import { FeatureStoreStrategyOptions } from '../feature.interfaces';
 import { FeatureStore } from '../store';
 
 /**
@@ -21,6 +22,10 @@ export class FeatureStoreStrategy {
    * @internal
    */
   protected active = false;
+
+  constructor(protected options: FeatureStoreStrategyOptions = {}) {
+    this.options = options;
+  }
 
   /**
    * Whether this strategy is active

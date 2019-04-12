@@ -1,12 +1,13 @@
 import { Directive, OnInit, OnDestroy, Optional } from '@angular/core';
 
-import { Subscription } from 'rxjs';
-import { skip, filter } from 'rxjs/operators';
+import { Subscription, of, zip } from 'rxjs';
+import { withLatestFrom, skip, filter } from 'rxjs/operators';
 
 import { RouteService } from '@igo2/core';
 import {
   IgoMap,
   MapBrowserComponent,
+  Layer,
   LayerService,
   LayerOptions
 } from '@igo2/geo';
@@ -18,8 +19,11 @@ import { DetailedContext } from './context.interface';
   selector: '[igoLayerContext]'
 })
 export class LayerContextDirective implements OnInit, OnDestroy {
+
   private context$$: Subscription;
   private queryParams: any;
+
+  private contextLayers: Layer[] = [];
 
   get map(): IgoMap {
     return this.component.map;
@@ -57,53 +61,38 @@ export class LayerContextDirective implements OnInit, OnDestroy {
   }
 
   private handleContextChange(context: DetailedContext) {
-    if (context.layers === undefined) {
-      return;
-    }
+    if (context.layers === undefined) { return; }
 
-    this.map.removeLayers();
+    this.map.removeLayers(this.contextLayers);
+    this.contextLayers = [];
 
-    context.layers.forEach(contextLayer => {
-      this.addLayerToMap(contextLayer);
+    const layersAndIndex$ = zip(...context.layers.map((layerOptions: LayerOptions, index: number) => {
+      return this.layerService.createAsyncLayer(layerOptions).pipe(
+        withLatestFrom(of(index))
+      );
+    }));
+
+    layersAndIndex$.subscribe((layersAndIndex: [Layer, number][]) => {
+      const layers = layersAndIndex.reduce((acc: Layer[], bunch: [Layer, number]) => {
+        const [layer, index] = bunch;
+        layer.visible = this.computeLayerVisibilityFromUrl(layer);
+        layer.zIndex = layer.zIndex || index + 1;  // Map indexes start at 1
+        acc[index] = layer;
+        return acc;
+      }, new Array(layersAndIndex.length));
+      this.contextLayers = layers;
+      this.map.addLayers(layers);
     });
   }
 
-  private addLayerToMap(layerOptions: LayerOptions) {
-    // if (contextLayer.maxScaleDenom) {
-    //   contextLayer.maxResolution = this.getResolutionFromScale(
-    //     contextLayer.maxScaleDenom
-    //   );
-    // }
-    // if (contextLayer.minScaleDenom) {
-    //   contextLayer.minResolution = this.getResolutionFromScale(
-    //     contextLayer.minScaleDenom
-    //   );
-    // }
-
-    this.layerService
-      .createAsyncLayer(layerOptions)
-      .subscribe(layer => {
-        this.getLayerParamVisibilityUrl(
-          layer.id,
-          layer
-        );
-
-        this.map.addLayer(layer);
-      });
-  }
-
-  public getResolutionFromScale(scale: number): number {
-    const dpi = 25.4 / 0.28;
-    return scale / (39.37 * dpi);
-  }
-
-  private getLayerParamVisibilityUrl(id, layer) {
+  private computeLayerVisibilityFromUrl(layer: Layer): boolean {
     const params = this.queryParams;
     const currentContext = this.contextService.context$.value.uri;
-    const currentLayerid: string = id;
+    const currentLayerid: string = layer.id;
 
+    let visible = layer.visible;
     if (!params || !currentLayerid) {
-      return;
+      return visible;
     }
 
     const contextParams = params[this.route.options.contextKey as string];
@@ -131,21 +120,23 @@ export class LayerContextDirective implements OnInit, OnDestroy {
       /* This order is important because to control whichever
        the order of * param. First whe open and close everything.*/
       if (visibleOnLayersParams === '*') {
-        layer.visible = true;
+        visible = true;
       }
       if (visibleOffLayersParams === '*') {
-        layer.visible = false;
+        visible = false;
       }
 
       // After, managing named layer by id (context.json OR id from datasource)
       visiblelayers = visibleOnLayersParams.split(',');
       invisiblelayers = visibleOffLayersParams.split(',');
       if (visiblelayers.indexOf(currentLayerid) > -1) {
-        layer.visible = true;
+        visible = true;
       }
       if (invisiblelayers.indexOf(currentLayerid) > -1) {
-        layer.visible = false;
+        visible = false;
       }
     }
+
+    return visible;
   }
 }

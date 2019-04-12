@@ -1,7 +1,7 @@
 import { Subscription } from 'rxjs';
 
 import { FeatureMotion } from '../feature.enums';
-import { Feature } from '../feature.interfaces';
+import { Feature, FeatureStoreLoadingStrategyOptions } from '../feature.interfaces';
 import { FeatureStore } from '../store';
 import { FeatureStoreStrategy } from './strategy';
 
@@ -19,6 +19,10 @@ export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
    * Subscription to the store's features
    */
   private stores$$ = new Map<FeatureStore, Subscription>();
+
+  constructor(protected options: FeatureStoreLoadingStrategyOptions) {
+    super(options);
+  }
 
   /**
    * Bind this strategy to a store and start watching for entities changes
@@ -106,7 +110,18 @@ export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
     if (features.length === 0) {
       store.clearLayer();
     } else {
-      store.setLayerFeatures(features, FeatureMotion.None);
+      let motion;
+      if (store.pristine === true) {
+        // If features have just been loaded into the store, move/zoom on them
+        motion = FeatureMotion.Default;
+      } else if (store.count > store.view.count) {
+        // If features have been filtered, move/zoom on the remaining ones
+        motion = FeatureMotion.Default;
+      } else {
+        // On insert, update or delete, do nothing
+        motion = FeatureMotion.None;
+      }
+      store.setLayerFeatures(features, motion, this.options.getFeatureId);
     }
   }
 }

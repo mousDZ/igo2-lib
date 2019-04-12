@@ -1,107 +1,59 @@
 import {
   Component,
   Input,
+  OnInit,
   OnDestroy,
   ChangeDetectorRef,
   ChangeDetectionStrategy
 } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, BehaviorSubject } from 'rxjs';
 
-import olFormatGeoJSON from 'ol/format/GeoJSON';
-
-import { MapService } from '../../map/shared/map.service';
-// import { FeatureService } from '../../feature/shared/feature.service';
-import { Layer, VectorLayer } from '../shared/layers';
+import { Layer } from '../shared/layers';
 
 @Component({
   selector: 'igo-layer-item',
   templateUrl: './layer-item.component.html',
   styleUrls: ['./layer-item.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Default
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class LayerItemComponent implements OnDestroy {
-  @Input()
-  get layer(): Layer {
-    return this._layer;
-  }
-  set layer(value: Layer) {
-    this._layer = value;
-    this.subscribeResolutionObserver();
-    const legend = this.layer.dataSource.options.legend;
-    if (legend && legend.collapsed) {
-      this.legendCollapsed = legend.collapsed;
-    }
-  }
-  private _layer: Layer;
+export class LayerItemComponent implements OnInit, OnDestroy {
 
-  @Input()
-  get edition() {
-    return this._edition;
-  }
-  set edition(value: boolean) {
-    this._edition = value;
-  }
-  private _edition = false;
+  showLegend$: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
-  @Input()
-  get color() {
-    return this._color;
-  }
-  set color(value: string) {
-    this._color = value;
-  }
-  private _color = 'primary';
+  inResolutionRange$: BehaviorSubject<boolean> = new BehaviorSubject(true);
 
-  @Input()
-  get toggleLegendOnVisibilityChange() {
-    return this._toggleLegendOnVisibilityChange;
-  }
-  set toggleLegendOnVisibilityChange(value: boolean) {
-    this._toggleLegendOnVisibilityChange = value;
-  }
-  private _toggleLegendOnVisibilityChange = false;
-
-  @Input()
-  get disableReorderLayers() {
-    return this._disableReorderLayers;
-  }
-  set disableReorderLayers(value: boolean) {
-    this._disableReorderLayers = value;
-  }
-  private _disableReorderLayers = false;
-
-  get opacity() {
-    return this.layer.opacity * 100;
-  }
-
-  set opacity(opacity: number) {
-    this.layer.opacity = opacity / 100;
-  }
-
-  get id(): string {
-    return (this.layer.dataSource.options as any).id
-      ? (this.layer.dataSource.options as any).id
-      : this.layer.id;
-  }
-
-  public legendCollapsed = true;
   private resolution$$: Subscription;
 
-  constructor(
-    // private featureService: FeatureService,
-    private cdRef: ChangeDetectorRef,
-    private mapService: MapService
-  ) {}
+  @Input() layer: Layer;
+
+  @Input() toggleLegendOnVisibilityChange: boolean = false;
+
+  @Input() orderable: boolean = true;
+
+  get removable(): boolean { return this.layer.options.removable !== false; }
+
+  get opacity() { return this.layer.opacity * 100; }
+  set opacity(opacity: number) { this.layer.opacity = opacity / 100; }
+
+  constructor(private cdRef: ChangeDetectorRef) {}
+
+  ngOnInit() {
+    const legend = this.layer.dataSource.options.legend || {};
+    const legendCollapsed = legend.collapsed === false ? false : true;
+    this.showLegend$.next(!legendCollapsed);
+
+    const resolution$ = this.layer.map.viewController.resolution$;
+    this.resolution$$ = resolution$.subscribe((resolution: number) => {
+      this.onResolutionChange(resolution);
+    });
+  }
 
   ngOnDestroy() {
     this.resolution$$.unsubscribe();
   }
 
   toggleLegend(collapsed: boolean) {
-    if (collapsed === undefined) {
-      return;
-    }
-    this.legendCollapsed = collapsed;
+    this.showLegend$.next(!collapsed);
   }
 
   toggleVisibility() {
@@ -111,43 +63,7 @@ export class LayerItemComponent implements OnDestroy {
     }
   }
 
-  showFeaturesList(layer: Layer) {
-    // this.featureService.unfocusFeature();
-    // this.featureService.unselectFeature();
-
-    const map = this.mapService.getMap();
-    const featuresOL = (layer.dataSource.ol as any).getFeatures();
-
-    const format = new olFormatGeoJSON();
-    const featuresGeoJSON = JSON.parse(
-      format.writeFeatures(featuresOL, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: map.projection
-      })
-    );
-
-    let i = 0;
-    const features = featuresGeoJSON.features.map(f =>
-      Object.assign({}, f, {
-        source: layer.title,
-        id: layer.title + String(i++)
-      })
-    );
-
-    // TODO: Restore that functionnality without using a global feature service
-    // this.featureService.setFeatures(features);
-  }
-
-  isVectorLayer(val) {
-    return val instanceof VectorLayer;
-  }
-
-  private subscribeResolutionObserver() {
-    if (!this.layer || !this.layer.map) {
-      return;
-    }
-    this.resolution$$ = this.layer.map.resolution$.subscribe(resolution => {
-      this.cdRef.detectChanges();
-    });
+  private onResolutionChange(resolution: number) {
+    this.inResolutionRange$.next(this.layer.isInResolutionsRange);
   }
 }

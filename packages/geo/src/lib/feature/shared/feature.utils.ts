@@ -1,11 +1,15 @@
-
 import * as olextent from 'ol/extent';
 import * as olproj from 'ol/proj';
 import * as olstyle from 'ol/style';
 import OlFeature from 'ol/Feature';
 import OlFormatGeoJSON from 'ol/format/GeoJSON';
 
-import { getEntityId, getEntityRevision, getEntityProperty } from '@igo2/common';
+import {
+  EntityKey,
+  getEntityId,
+  getEntityRevision,
+  getEntityProperty
+} from '@igo2/common';
 
 import { IgoMap } from '../../map';
 import { FeatureMotion } from './feature.enums';
@@ -18,31 +22,67 @@ import { Feature } from './feature.interfaces';
  * @param projectionOut Feature object projection
  * @returns OpenLayers feature object
  */
-export function featureToOl(feature: Feature, projectionOut: string): OlFeature {
+export function featureToOl(
+  feature: Feature,
+  projectionOut: string,
+  getId?: (Feature) => EntityKey
+): OlFeature {
+  getId = getId ? getId : getEntityId;
+
   const olFormat = new OlFormatGeoJSON();
   const olFeature = olFormat.readFeature(feature, {
     dataProjection: feature.projection,
     featureProjection: projectionOut
   });
 
-  olFeature.setId(getEntityId(feature));
+  olFeature.setId(getId(feature));
 
   if (feature.projection !== undefined) {
-    olFeature.set('projection', feature.projection);
+    olFeature.set('_projection', feature.projection, true);
   }
 
   if (feature.extent !== undefined) {
-    olFeature.set('extent', feature.extent);
+    olFeature.set('_extent', feature.extent, true);
   }
 
   const mapTitle = getEntityProperty(feature, 'meta.mapTitle');
   if (mapTitle !== undefined) {
-    olFeature.set('mapTitle', mapTitle);
+    olFeature.set('_mapTitle', mapTitle, true);
   }
 
-  olFeature.set('entityRevision', getEntityRevision(feature));
+  olFeature.set('_entityRevision', getEntityRevision(feature), true);
 
   return olFeature;
+}
+
+/**
+ * Create a feature object out of an OL feature
+ * The output object has a reference to the feature id.
+ * @param olFeature OL Feature
+ * @param projectionIn OL feature projection
+ * @param projectionOut Feature projection
+ * @returns Feature
+ */
+export function featureFromOl(
+  olFeature: OlFeature,
+  projectionIn: string,
+  projectionOut = 'EPSG:4326'
+): Feature {
+  const olFormat = new OlFormatGeoJSON();
+  const feature = olFormat.writeFeatureObject(olFeature, {
+    dataProjection: projectionOut,
+    featureProjection: projectionIn
+  });
+
+  return Object.assign({}, feature, {
+    projection: projectionOut,
+    extent: olFeature.get('_extent'),
+    meta: {
+      id: olFeature.getId(),
+      revision: olFeature.getRevision(),
+      mapTitle: olFeature.get('_mapTitle')
+    }
+  });
 }
 
 /**
@@ -52,21 +92,27 @@ export function featureToOl(feature: Feature, projectionOut: string): OlFeature 
  * @returns Extent in the map projection
  */
 export function computeOlFeatureExtent(
-  map: IgoMap, olFeature: OlFeature
+  map: IgoMap,
+  olFeature: OlFeature
 ): [number, number, number, number] {
-  let extent = olextent.createEmpty();
+  let olExtent = olextent.createEmpty();
 
-  const olFeatureExtent = olFeature.get('extent');
-  const olFeatureProjection = olFeature.get('projection');
+  const olFeatureExtent = olFeature.get('_extent');
+  const olFeatureProjection = olFeature.get('_projection');
   if (olFeatureExtent !== undefined && olFeatureProjection !== undefined) {
-    extent = olproj.transformExtent(
+    olExtent = olproj.transformExtent(
       olFeatureExtent,
       olFeatureProjection,
       map.projection
     );
+  } else {
+    const olGeometry = olFeature.getGeometry();
+    if (olGeometry !== null) {
+      olExtent = olGeometry.getExtent();
+    }
   }
 
-  return extent;
+  return olExtent;
 }
 
 /**
@@ -82,11 +128,7 @@ export function computeOlFeaturesExtent(
   const extent = olextent.createEmpty();
 
   olFeatures.forEach((olFeature: OlFeature) => {
-    const olGeometry = olFeature.getGeometry();
     const featureExtent = computeOlFeatureExtent(map, olFeature);
-    if (olextent.isEmpty(featureExtent) && olGeometry !== null) {
-      olextent.extend(featureExtent, olGeometry.getExtent());
-    }
     olextent.extend(extent, featureExtent);
   });
 
@@ -120,7 +162,10 @@ export function scaleExtent(
  * @param featuresExtent The features's extent
  * @returns Return true if features are out of view
  */
-export function featuresAreOutOfView(map: IgoMap, featuresExtent: [number, number, number, number]) {
+export function featuresAreOutOfView(
+  map: IgoMap,
+  featuresExtent: [number, number, number, number]
+) {
   const mapExtent = map.getExtent();
   const edgeRatio = 0.05;
   const viewExtent = scaleExtent(mapExtent, edgeRatio * -1);
@@ -137,13 +182,16 @@ export function featuresAreOutOfView(map: IgoMap, featuresExtent: [number, numbe
  * @param featuresExtent The features's extent
  * @returns Return true if features are too deep in the view
  */
-export function featuresAreTooDeepInView(map: IgoMap, featuresExtent: [number, number, number, number]) {
+export function featuresAreTooDeepInView(
+  map: IgoMap,
+  featuresExtent: [number, number, number, number]
+) {
   const mapExtent = map.getExtent();
   const mapExtentArea = olextent.getArea(mapExtent);
   const featuresExtentArea = olextent.getArea(featuresExtent);
   const areaRatio = 0.01;
 
-  return (featuresExtentArea / mapExtentArea) < areaRatio;
+  return featuresExtentArea / mapExtentArea < areaRatio;
 }
 
 /**
@@ -165,12 +213,15 @@ export function moveToFeatures(
   const viewExtent = scaleExtent(featuresExtent, scale);
 
   if (motion === FeatureMotion.Zoom) {
-    map.delayedZoomToExtent(viewExtent);
+    map.viewController.zoomToExtent(viewExtent);
   } else if (motion === FeatureMotion.Move) {
-    map.delayedMoveToExtent(viewExtent);
+    map.viewController.moveToExtent(viewExtent);
   } else if (motion === FeatureMotion.Default) {
-    if (featuresAreOutOfView(map, featuresExtent) || featuresAreTooDeepInView(map, featuresExtent)) {
-      map.delayedZoomToExtent(viewExtent);
+    if (
+      featuresAreOutOfView(map, featuresExtent) ||
+      featuresAreTooDeepInView(map, featuresExtent)
+    ) {
+      map.viewController.zoomToExtent(viewExtent);
     }
   }
 }

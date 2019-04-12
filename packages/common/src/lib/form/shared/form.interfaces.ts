@@ -1,5 +1,5 @@
 import { FormControl, FormGroup, ValidatorFn } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 export interface Form {
   fields: FormField[];
@@ -35,12 +35,13 @@ export interface FormFieldOptions {
   disabled?: boolean;
   visible?: boolean;
   cols?: number;
+  errors?: {[key: string]: string};
 }
 
 export interface FormFieldInputs {}
 
 export interface FormFieldSelectInputs extends FormFieldInputs {
-  choices: Observable<FormFieldSelectChoice[]> | FormFieldSelectChoice[];
+  choices: BehaviorSubject<FormFieldSelectChoice[]> | FormFieldSelectChoice[];
 }
 
 export interface FormFieldSelectChoice {

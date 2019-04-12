@@ -24,6 +24,7 @@ export interface EntityStoreOptions {
 
 export interface EntityStateManagerOptions {
   getKey?: (entity: object) => EntityKey;
+  store?: EntityStore<object>;
 }
 
 export interface EntityTransactionOptions {
@@ -59,6 +60,7 @@ export interface EntityOperationState {
 export interface EntityTableTemplate {
   columns: EntityTableColumn[];
   selection?: boolean;
+  selectionCheckbox?: boolean;
   selectMany?: boolean;
   sort?: boolean;
   valueAccessor?: (entity: object, property: string) => any;

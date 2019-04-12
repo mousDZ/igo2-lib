@@ -1,8 +1,11 @@
 {
   "igo": {
     "geo": {
-      "catalogTool": {
-        "baseLayers": "Fonds de carte"
+      "catalog": {
+        "layer.addToMap": "Ajouter à la carte",
+        "layer.removeFromMap": "Retirer de la carte",
+        "group.addToMap": "Ajouter toutes les couches de ce groupe à la carte",
+        "group.removeFromMap": "Retirer toutes les couches de ce groupe de la carte"
       },
       "clickOnMap": {
         "clickedFeature": "Entités cliquées"
@@ -72,11 +75,11 @@
       },
       "layer": {
         "hideLayer": "Masquer la couche",
-        "lowerLayer": "Descendre la couche",
+        "lowerLayer": "Mettre en arrière",
         "loadingLegendText": "Chargement de la légende",
         "noLegendText": "Aucune légende disponible pour cette couche",
         "opacity": "Opacité",
-        "raiseLayer": "Monter la couche",
+        "raiseLayer": "Mettre en avant",
         "removeLayer": "Retirer la couche de la carte",
         "showFeaturesList": "Afficher la liste des entités",
         "showLayer": "Afficher la couche",
@@ -202,6 +205,37 @@
         "date": "Date",
         "endDate": "Date de fin",
         "startDate": "Date de début"
+      },
+      "measure": {
+        "area": "Superficie",
+        "length": "Distance",
+        "perimeter": "Périmètre",
+        "meters": "Mètres",
+        "kilometers": "Kilomètres",
+        "miles": "Miles",
+        "feet": "Pieds",
+        "squareMeters": "Mètres²",
+        "squareKilometers": "Kilomètres²",
+        "squareMiles": "Miles²",
+        "squareFeet": "Pieds²",
+        "hectares": "Hectares",
+        "acres": "Acres",
+        "toggleMeasure": "Mesurage",
+        "toggleMapTooltips": "Mesures sur la carte",
+        "toggleAutoUnits": "Unités automatiques",
+        "actionbar": {
+          "calculate.title": "Calculer",
+          "calculate.tooltip": "Calculer",
+          "delete.title": "Supprimer",
+          "delete.tooltip": "Supprimer"
+        }
+      },
+      "edition": {
+        "ogcFilter.close": "Fermer",
+        "ogcFilter.title": "Filtres",
+        "ogcFilter.tooltip": "Appliquer des filtres sur la couche",
+        "wfsDownload.title": "Télécharger les données associées",
+        "wfsDownload.tooltip": "Télécharger les données associées"
       }
     }
   },

@@ -1,6 +1,10 @@
 import OlFeature from 'ol/Feature';
 
-import { EntityStore } from '@igo2/common';
+import {
+  getEntityId,
+  EntityKey,
+  EntityStore
+} from '@igo2/common';
 
 import { FeatureDataSource } from '../../datasource';
 import { VectorLayer } from '../../layer';
@@ -8,7 +12,7 @@ import { IgoMap } from '../../map';
 
 import { FeatureMotion } from './feature.enums';
 import { Feature, FeatureStoreOptions } from './feature.interfaces';
-import { featureToOl, moveToFeatures } from './feature.utils';
+import { featureFromOl, featureToOl, moveToFeatures } from './feature.utils';
 import { FeatureStoreStrategy } from './strategies/strategy';
 
 /**
@@ -127,24 +131,48 @@ export class FeatureStore<T extends Feature = Feature> extends EntityStore<T> {
    * @param features Features
    * @param motion Optional: The type of motion to perform
    */
-  setLayerFeatures(features: Feature[], motion: FeatureMotion = FeatureMotion.Default) {
-    if (this.layer === undefined) {
-      throw new Error('This FeatureStore is not bound to a layer.');
-    }
+  setLayerFeatures(
+    features: Feature[],
+    motion: FeatureMotion = FeatureMotion.Default,
+    getId?: (Feature) => EntityKey
+  ) {
+    getId = getId ? getId : getEntityId;
+    this.checkLayer();
 
     const olFeatures = features
-      .map((feature: Feature) => featureToOl(feature, this.map.projection));
+      .map((feature: Feature) => featureToOl(feature, this.map.projection, getId));
     this.setLayerOlFeatures(olFeatures, motion);
+  }
+
+  /**
+   * Set the store's features from an array of OL features.
+   * @param olFeatures Ol features
+   */
+  setStoreOlFeatures(olFeatures: OlFeature[]) {
+    this.checkLayer();
+
+    const features = olFeatures.map((olFeature: OlFeature) => {
+      olFeature.set('_featureStore', this, true);
+      return featureFromOl(olFeature, this.layer.map.projection);
+    });
+    this.load(features as T[]);
   }
 
   /**
    * Remove all features from the layer
    */
   clearLayer() {
+    this.checkLayer();
+    this.source.ol.clear();
+  }
+
+  /**
+   * Check wether a layer is bound or not and throw an error if not.
+   */
+  private checkLayer() {
     if (this.layer === undefined) {
       throw new Error('This FeatureStore is not bound to a layer.');
     }
-    this.source.ol.clear();
   }
 
   /**
@@ -163,7 +191,7 @@ export class FeatureStore<T extends Feature = Feature> extends EntityStore<T> {
       const newOlFeature = olFeaturesMap.get(olFeature.getId());
       if (newOlFeature === undefined) {
         olFeaturesToRemove.push(olFeature);
-      } else if (newOlFeature.get('entityRevision') !== olFeature.get('entityRevision')) {
+      } else if (newOlFeature.get('_entityRevision') !== olFeature.get('_entityRevision')) {
         olFeaturesToRemove.push(olFeature);
       } else {
         olFeaturesMap.delete(newOlFeature.getId());
@@ -182,12 +210,11 @@ export class FeatureStore<T extends Feature = Feature> extends EntityStore<T> {
       this.addOlFeaturesToLayer(olFeaturesToAdd);
     }
 
-    // Determine the move action to take
     if (olFeaturesToAdd.length > 0) {
+      // If features are added, do a motion toward the newly added features
       moveToFeatures(this.map, olFeaturesToAdd, motion);
-    } else if (olFeaturesToRemove.length > 0) {
-      // Do nothing
     } else if (olFeatures.length > 0) {
+      // Else, do a motion toward all the features
       moveToFeatures(this.map, olFeatures, motion);
     }
   }
@@ -198,7 +225,7 @@ export class FeatureStore<T extends Feature = Feature> extends EntityStore<T> {
    */
   private addOlFeaturesToLayer(olFeatures: OlFeature[]) {
     olFeatures.forEach((olFeature: OlFeature) => {
-      olFeature.set('featureStore', this);
+      olFeature.set('_featureStore', this, true);
     });
     this.source.ol.addFeatures(olFeatures);
   }

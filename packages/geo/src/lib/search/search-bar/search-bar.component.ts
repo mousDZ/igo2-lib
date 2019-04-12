@@ -17,6 +17,7 @@ import { debounce, distinctUntilChanged } from 'rxjs/operators';
 
 import { EntityStore } from '@igo2/common';
 
+import { SEARCH_TYPES } from '../shared/search.enums';
 import { SearchResult, Research } from '../shared/search.interfaces';
 import { SearchService } from '../shared/search.service';
 
@@ -88,6 +89,11 @@ export class SearchBarComponent implements OnInit, OnDestroy {
   @Input() store: EntityStore<SearchResult>;
 
   /**
+   * List of available search types
+   */
+  @Input() searchTypes: string[] = SEARCH_TYPES;
+
+  /**
    * Event emitted when the search term changes
    */
   @Output() change = new EventEmitter<string>();
@@ -99,6 +105,11 @@ export class SearchBarComponent implements OnInit, OnDestroy {
     research: Research;
     results: SearchResult[];
   }>();
+
+  /**
+   * Event emitted when the search type changes
+   */
+  @Output() searchTypeChange = new EventEmitter<string>();
 
   /**
    * Input element
@@ -190,8 +201,9 @@ export class SearchBarComponent implements OnInit, OnDestroy {
    * @internal
    */
   onSearchTypeChange(searchType: string) {
+    this.searchTypeChange.emit(searchType);
     this.placeholder = `search.${searchType.toLowerCase()}.placeholder`;
-    this.onTermChange(this.term);
+    this.doSearch(this.term);
   }
 
   /**
@@ -232,7 +244,14 @@ export class SearchBarComponent implements OnInit, OnDestroy {
    */
   private onTermChange(term: string | undefined) {
     this.change.emit(term);
+    this.doSearch(term);
+  }
 
+  /**
+   * Execute the search
+   * @param term Search term
+   */
+  private doSearch(term: string | undefined) {
     if (term === undefined || term === '') {
       if (this.store !== undefined) {
         this.store.clear();

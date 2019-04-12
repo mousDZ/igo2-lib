@@ -49,15 +49,26 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
   private _index: Map<EntityKey, E>;
 
   /**
+   * Store index
+   */
+  get pristine(): boolean { return this._pristine; }
+  private _pristine: boolean = true;
+
+  /**
+   * Number of entities
+   */
+  get count(): number { return this.entities$.value.length; }
+
+  /**
    * Whether there are entities in the store
    */
-  get empty(): boolean { return this.entities$.value.length === 0; }
+  get empty(): boolean { return this.count === 0; }
 
   constructor(entities: E[], options: EntityStoreOptions = {}) {
     this.getKey = options.getKey ? options.getKey : getEntityId;
     this.getProperty = options.getProperty ? options.getProperty : getEntityProperty;
 
-    this.state = new EntityStateManager<E, S>({getKey: this.getKey});
+    this.state = new EntityStateManager<E, S>({store: this});
     this.view = new EntityView<E>(this.entities$);
     this.stateView = new EntityView<E, EntityRecord<E, S>>(this.view.all$()).join({
       source: this.state.change$,
@@ -99,6 +110,7 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
    */
   load(entities: E[]) {
     this._index = this.generateIndex(entities);
+    this._pristine = true;
     this.next();
   }
 
@@ -110,6 +122,7 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
   softClear() {
     if (this.index && this.index.size > 0) {
       this.index.clear();
+      this._pristine = true;
       this.next();
     }
   }
@@ -144,6 +157,7 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
    */
   insertMany(entities: E[]) {
     entities.forEach((entity: E) => this.index.set(this.getKey(entity), entity));
+    this._pristine = false;
     this.next();
   }
 
@@ -161,6 +175,7 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
    */
   updateMany(entities: E[]) {
     entities.forEach((entity: E) => this.index.set(this.getKey(entity), entity));
+    this._pristine = false;
     this.next();
   }
 
@@ -178,6 +193,7 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
    */
   deleteMany(entities: E[]) {
     entities.forEach((entity: E) => this.index.delete(this.getKey(entity)));
+    this._pristine = false;
     this.next();
   }
 

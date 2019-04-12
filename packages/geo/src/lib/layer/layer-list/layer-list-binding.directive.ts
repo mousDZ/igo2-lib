@@ -5,6 +5,7 @@ import { RouteService } from '@igo2/core';
 import { MapService } from '../../map/shared/map.service';
 import { LayerListComponent } from './layer-list.component';
 import { LayerListService } from './layer-list.service';
+import { Layer } from '../shared/layers/layer';
 
 @Directive({
   selector: '[igoLayerListBinding]'
@@ -28,7 +29,11 @@ export class LayerListBindingDirective implements OnInit, AfterViewInit, OnDestr
 
     this.layers$$ = this.mapService
       .getMap()
-      .layers$.subscribe(layers => (this.component.layers = layers));
+      .layers$.subscribe((layers: Layer[]) => {
+        this.component.layers = layers.filter((layer: Layer) => {
+          return layer.options.showInLayerList !== false;
+        });
+      });
   }
 
   ngAfterViewInit(): void {
@@ -46,25 +51,25 @@ export class LayerListBindingDirective implements OnInit, AfterViewInit, OnDestr
         const sortedAplhaFromUrl = params[this.route.options.llcAKey as string];
         const onlyVisibleFromUrl = params[this.route.options.llcVKey as string];
         const onlyInRangeFromUrl = params[this.route.options.llcRKey as string];
-        if (keywordFromUrl && !this.layerListService.keywordInitializated) {
+        if (keywordFromUrl && !this.layerListService.keywordInitialized) {
           this.layerListService.keyword = keywordFromUrl;
-          this.layerListService.keywordInitializated = true;
+          this.layerListService.keywordInitialized = true;
         }
-        if (sortedAplhaFromUrl && !this.layerListService.sortedAlphaInitializated) {
+        if (sortedAplhaFromUrl && !this.layerListService.sortedAlphaInitialized) {
           this.layerListService.sortedAlpha = sortedAplhaFromUrl === '1' ? true : false;
-          this.layerListService.sortedAlphaInitializated = true;
+          this.layerListService.sortedAlphaInitialized = true;
         }
         if (onlyVisibleFromUrl &&
-          !this.layerListService.onlyVisibleInitializated &&
+          !this.layerListService.onlyVisibleInitialized &&
           this.component.hasLayerNotVisible) {
           this.layerListService.onlyVisible = onlyVisibleFromUrl === '1' ? true : false;
-          this.layerListService.onlyVisibleInitializated = true;
+          this.layerListService.onlyVisibleInitialized = true;
         }
         if (onlyInRangeFromUrl &&
-          !this.layerListService.onlyInRangeInitializated &&
+          !this.layerListService.onlyInRangeInitialized &&
           this.component.hasLayerOutOfRange) {
           this.layerListService.onlyInRange = onlyInRangeFromUrl === '1' ? true : false;
-          this.layerListService.onlyInRangeInitializated = true;
+          this.layerListService.onlyInRangeInitialized = true;
         }
       });
     }

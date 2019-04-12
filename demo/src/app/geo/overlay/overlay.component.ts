@@ -1,13 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
 
 import { LanguageService } from '@igo2/core';
 import {
   IgoMap,
   DataSourceService,
   LayerService,
-  OverlayService,
   FEATURE,
-  Feature
+  Feature,
+  FeatureMotion
 } from '@igo2/geo';
 
 @Component({
@@ -15,7 +15,7 @@ import {
   templateUrl: './overlay.component.html',
   styleUrls: ['./overlay.component.scss']
 })
-export class AppOverlayComponent {
+export class AppOverlayComponent implements OnInit, AfterViewInit {
   public map = new IgoMap({
     overlay: true,
     controls: {
@@ -33,9 +33,10 @@ export class AppOverlayComponent {
   constructor(
     private languageService: LanguageService,
     private dataSourceService: DataSourceService,
-    private layerService: LayerService,
-    private overlayService: OverlayService
-  ) {
+    private layerService: LayerService
+  ) {}
+
+  ngOnInit() {
     this.dataSourceService
       .createAsyncDataSource({
         type: 'osm'
@@ -48,7 +49,9 @@ export class AppOverlayComponent {
           })
         );
       });
+  }
 
+  ngAfterViewInit() {
     const feature1: Feature = {
       type: FEATURE,
       projection: 'EPSG:4326',
@@ -88,6 +91,9 @@ export class AppOverlayComponent {
       }
     };
 
-    this.overlayService.setFeatures([feature1, feature2, feature3]);
+    this.map.overlay.setFeatures(
+      [feature1, feature2, feature3],
+      FeatureMotion.None
+    );
   }
 }

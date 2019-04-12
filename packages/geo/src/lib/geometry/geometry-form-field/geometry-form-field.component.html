@@ -2,36 +2,43 @@
   [formControl]="formControl"
   [map]="map"
   [geometryType]="geometryType$ | async"
-  [buffer]="buffer$ | async">
+  [drawGuide]="drawGuide$ | async">
 </igo-geometry-form-field-input>
 
-<div class="geometry-type-toggle">
+<div *ngIf="geometryTypeField" class="geometry-type-toggle">
   <mat-button-toggle-group
-    [value]="geometryType$ | async"
     [disabled]="(value$ | async) !== undefined"
-    (change)="onGeometryTypeChange($event.value)">
-    <mat-button-toggle [value]="'Point'">
+    [ngModel]="geometryTypeModel"
+    (ngModelChange)="onGeometryTypeChange($event)">
+    <mat-button-toggle
+      value="Point"
+      [disabled]="geometryTypes.indexOf('Point') < 0">
       {{'igo.geo.geometry.point' | translate}}
     </mat-button-toggle>
-    <mat-button-toggle [value]="'LineString'">
+    <mat-button-toggle
+      value="LineString"
+      [disabled]="geometryTypes.indexOf('LineString') < 0">
       {{'igo.geo.geometry.line' | translate}}
     </mat-button-toggle>
-    <mat-button-toggle [value]="'Polygon'">
+    <mat-button-toggle
+      value="Polygon"
+      [disabled]="geometryTypes.indexOf('Polygon') < 0">
       {{'igo.geo.geometry.polygon' | translate}}
     </mat-button-toggle>
   </mat-button-toggle-group>
 </div>
 
-<mat-form-field class="buffer-field">
+<mat-form-field *ngIf="drawGuideField" class="draw-guide-field">
   <input
     matInput
     type="number"
-    [ngModel]="buffer"
-    (ngModelChange)="onBufferChange($event)">
+    [placeholder]="drawGuidePlaceholder"
+    [ngModel]="drawGuideModel"
+    (ngModelChange)="onDrawGuideChange($event)">
   <mat-icon
     matPrefix
     [color]="'primary'">
     adjust
   </mat-icon>
-  <span matSuffix class="buffer-units">mètres</span>
+  <span matSuffix class="draw-guide-units">{{'igo.geo.measure.meters' | translate}}</span>
 </mat-form-field>

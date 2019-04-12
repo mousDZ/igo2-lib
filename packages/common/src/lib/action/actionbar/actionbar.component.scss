@@ -18,6 +18,8 @@ mat-list {
 }
 
 :host.horizontal {
+  max-width: 100%;
+  overflow: hidden;
   mat-list {
     width: auto;
     white-space: nowrap;
@@ -39,7 +41,7 @@ mat-list {
   -webkit-line-clamp: 2;
 }
 
-::ng-deep .mat-list .mat-list-item.mat-list-item-avatar {
+::ng-deep .mat-list-base .mat-list-item.mat-list-item-with-avatar {
   height: $igo-actionbar-item-height;
 
   .mat-list-item-content {

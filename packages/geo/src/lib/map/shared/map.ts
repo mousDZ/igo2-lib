@@ -6,67 +6,59 @@ import olControlAttribution from 'ol/control/Attribution';
 import olControlScaleLine from 'ol/control/ScaleLine';
 import * as olproj from 'ol/proj';
 import * as olproj4 from 'ol/proj/proj4';
-import * as oleasing from 'ol/easing';
+import OlProjection from 'ol/proj/Projection';
 import * as olinteraction from 'ol/interaction';
-import * as olstyle from 'ol/style';
 
 import proj4 from 'proj4';
 import { BehaviorSubject, Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { SubjectStatus } from '@igo2/utils';
 
-import { Layer, VectorLayer } from '../../layer/shared/layers';
-import { FeatureDataSource } from '../../datasource/shared/datasources/feature-datasource';
+import { Layer } from '../../layer/shared/layers';
+import { Overlay } from '../../overlay/shared/overlay';
 
 import { LayerWatcher } from '../utils/layer-watcher';
 import {
   MapViewOptions,
   MapOptions,
-  AttributionOptions,
-  ScaleLineOptions
+  MapAttributionOptions,
+  MapScaleLineOptions,
+  MapExtent
 } from './map.interface';
+import { MapViewController } from './controllers/view';
 
-export class IgoBaseMap {
+// TODO: This class is messy. Clearly define it's scope and the map browser's.
+// Move some stuff into controllers.
+export class IgoMap {
   public ol: olMap;
   public layers$ = new BehaviorSubject<Layer[]>([]);
-  public layers: Layer[] = [];
   public status$: Subject<SubjectStatus>;
-  public resolution$ = new BehaviorSubject<number>(undefined);
   public geolocation$ = new BehaviorSubject<olGeolocation>(undefined);
   public geolocationFeature: olFeature;
-
-  public overlayMarkerStyle: olstyle.Style;
-  public overlayStyle: olstyle.Style;
-  private overlayDataSource: FeatureDataSource;
+  public overlay: Overlay;
+  public viewController: MapViewController;
 
   private layerWatcher: LayerWatcher;
   private geolocation: olGeolocation;
   private geolocation$$: Subscription;
 
-  private options: MapOptions = {
-    controls: { attribution: true },
-    overlay: true
+  private options: MapOptions;
+  private defaultOptions: Partial<MapOptions> = {
+    controls: { attribution: false }
   };
 
-  get projection(): string {
-    const p = this.ol
-      .getView()
-      .getProjection()
-      .getCode();
-
-    return p;
+  get layers(): Layer[] {
+    return this.layers$.value;
   }
 
-  get resolution(): number {
-    return this.ol.getView().getResolution();
+  get projection(): string {
+    return this.viewController.getOlProjection().getCode();
   }
 
   constructor(options?: MapOptions) {
-    Object.assign(this.options, options);
+    this.options = Object.assign({}, this.defaultOptions, options);
     this.layerWatcher = new LayerWatcher();
     this.status$ = this.layerWatcher.status$;
-
     olproj4.register(proj4);
     this.init();
   }
@@ -77,13 +69,13 @@ export class IgoBaseMap {
       if (this.options.controls.attribution) {
         const attributionOpt = (this.options.controls.attribution === true
           ? {}
-          : this.options.controls.attribution) as AttributionOptions;
+          : this.options.controls.attribution) as MapAttributionOptions;
         controls.push(new olControlAttribution(attributionOpt));
       }
       if (this.options.controls.scaleLine) {
         const scaleLineOpt = (this.options.controls.scaleLine === true
           ? {}
-          : this.options.controls.scaleLine) as ScaleLineOptions;
+          : this.options.controls.scaleLine) as MapScaleLineOptions;
         controls.push(new olControlScaleLine(scaleLineOpt));
       }
     }
@@ -106,26 +98,12 @@ export class IgoBaseMap {
       controls
     });
 
-    this.ol.on('moveend', e => {
-      if (this.resolution$.value !== this.resolution) {
-        this.resolution$.next(this.resolution);
-      }
+    this.setView(this.options.view || {});
+    this.viewController = new MapViewController({
+      stateHistory: true
     });
-
-    if (this.options.overlay) {
-      this.overlayMarkerStyle = this.setOverlayMarkerStyle();
-
-      this.overlayDataSource = new FeatureDataSource();
-      this.overlayStyle = this.setOverlayDataSourceStyle();
-
-      const layer = new VectorLayer({
-        title: 'Overlay',
-        zIndex: 999,
-        style: this.overlayStyle,
-        source: this.overlayDataSource
-      });
-      this.addLayer(layer, false);
-    }
+    this.viewController.setOlMap(this.ol);
+    this.overlay = new Overlay(this);
   }
 
   setTarget(id: string) {
@@ -149,14 +127,23 @@ export class IgoBaseMap {
     this.setView(Object.assign(viewOptions, options));
   }
 
+  /**
+   * Set the map view
+   * @param options Map view options
+   */
   setView(options: MapViewOptions) {
+    if (this.viewController !== undefined) {
+      this.viewController.clearStateHistory();
+    }
+
     const view = new olView(options);
     this.ol.setView(view);
 
     this.unsubscribeGeolocate();
     if (options) {
       if (options.center) {
-        const center = olproj.fromLonLat(options.center, this.projection);
+        const projection = view.getProjection().getCode();
+        const center = olproj.fromLonLat(options.center, projection);
         view.setCenter(center);
       }
 
@@ -166,79 +153,19 @@ export class IgoBaseMap {
     }
   }
 
-  getCenter(projection?): [number, number] {
-    let center = this.ol.getView().getCenter();
-    if (projection && center) {
-      center = olproj.transform(center, this.projection, projection);
-    }
-    return center;
+  // TODO: Move to ViewController and update every place it's used
+  getCenter(projection?: string | OlProjection): [number, number] {
+    return this.viewController.getCenter();
   }
 
-  getExtent(projection?): [number, number, number, number] {
-    let ext = this.ol.getView().calculateExtent(this.ol.getSize());
-    if (projection && ext) {
-      ext = olproj.transformExtent(ext, this.projection, projection);
-    }
-    return ext;
+  // TODO: Move to ViewController and update every place it's used
+  getExtent(projection?: string | OlProjection): MapExtent {
+    return this.viewController.getExtent();
   }
 
-  resetRotation() {
-    this.ol.getView().setRotation(0);
-  }
-
-  getRotation() {
-    return this.ol.getView().getRotation();
-  }
-
+  // TODO: Move to ViewController and update every place it's used
   getZoom(): number {
-    return Math.round(this.ol.getView().getZoom());
-  }
-
-  zoomIn() {
-    this.zoomTo(this.ol.getView().getZoom() + 1);
-  }
-
-  zoomOut() {
-    this.zoomTo(this.ol.getView().getZoom() - 1);
-  }
-
-  zoomTo(zoom: number) {
-    this.ol.getView().animate({
-      zoom,
-      duration: 250,
-      easing: oleasing.easeOut
-    });
-  }
-
-  addLayer(layer: Layer, push = true) {
-    if (layer.baseLayer && layer.visible) {
-      this.changeBaseLayer(layer);
-    }
-
-    const existingLayer = this.getLayerById(layer.id);
-    if (existingLayer !== undefined) {
-      existingLayer.visible = true;
-      return;
-    }
-
-    if (layer.zIndex === undefined || layer.zIndex === 0) {
-      const offset = layer.baseLayer ? 1 : 10;
-      layer.zIndex = this.layers.length + offset;
-    }
-
-    layer.add(this);
-
-    this.layerWatcher.watchLayer(layer);
-
-    if (push) {
-      this.layers.splice(0, 0, layer);
-      this.sortLayers();
-      this.layers$.next(this.layers.slice(0));
-    }
-  }
-
-  addLayers(layers: Layer[], push = true) {
-    layers.forEach(layer => this.addLayer(layer, push));
+    return this.viewController.getZoom();
   }
 
   changeBaseLayer(baseLayer: Layer) {
@@ -254,31 +181,66 @@ export class IgoBaseMap {
   }
 
   getBaseLayers(): Layer[] {
-    return this.layers.filter(layer => layer.baseLayer);
+    return this.layers.filter((layer: Layer) => layer.baseLayer === true);
   }
 
   getLayerById(id: string): Layer {
-    return this.layers.find(layer => layer.id && layer.id === id);
+    return this.layers.find((layer: Layer) => layer.id && layer.id === id);
   }
 
+  /**
+   * Add a single layer
+   * @param layer Layer to add
+   * @param push DEPRECATED
+   */
+  addLayer(layer: Layer, push = true) {
+    this.addLayers([layer]);
+  }
+
+  /**
+   * Add many layers
+   * @param layers Layers to add
+   * @param push DEPRECATED
+   */
+  addLayers(layers: Layer[], push = true) {
+    const addedLayers = layers
+      .map((layer: Layer) => this.doAddLayer(layer))
+      .filter((layer: Layer | undefined) => layer !== undefined);
+    this.setLayers([].concat(this.layers, addedLayers));
+  }
+
+  /**
+   * Remove a single layer
+   * @param layer Layer to remove
+   */
   removeLayer(layer: Layer) {
-    const index = this.getLayerIndex(layer);
-
-    if (index >= 0) {
-      this.layerWatcher.unwatchLayer(layer);
-      layer.remove();
-      this.layers.splice(index, 1);
-      this.layers$.next(this.layers.slice(0));
-    }
+    this.removeLayers([layer]);
   }
 
-  removeLayers() {
-    this.layers.forEach(layer => {
-      this.layerWatcher.unwatchLayer(layer);
-      layer.remove();
-    }, this);
+  /**
+   * Remove many layers
+   * @param layers Layers to remove
+   */
+  removeLayers(layers: Layer[]) {
+    const newLayers = this.layers$.value.slice(0);
+    const layersToRemove = [];
+    layers.forEach((layer: Layer) => {
+      const index = this.getLayerIndex(layer);
+      if (index >= 0) {
+        layersToRemove.push(layer);
+        newLayers.splice(index, 1);
+      }
+    });
 
-    this.layers = [];
+    layersToRemove.forEach((layer: Layer) => this.doRemoveLayer(layer));
+    this.setLayers(newLayers);
+  }
+
+  /**
+   * Remove all layers
+   */
+  removeAllLayers() {
+    this.layers.forEach((layer: Layer) => this.doRemoveLayer(layer));
     this.layers$.next([]);
   }
 
@@ -309,211 +271,73 @@ export class IgoBaseMap {
     this.layers$.next(this.layers.slice(0));
   }
 
-  moveToExtent(extent: [number, number, number, number]) {
-    const view = this.ol.getView();
-    view.fit(extent, {
-      maxZoom: view.getZoom()
-    });
-  }
+  /**
+   * Add a layer to the OL map and start watching. If the layer is already
+   * added to this map, make it visible but don't add it one again.
+   * @param layer Layer
+   * @returns The layer added, if any
+   */
+  private doAddLayer(layer: Layer) {
+    if (layer.baseLayer && layer.visible) {
+      this.changeBaseLayer(layer);
+    }
 
-  moveToFeature(feature: olFeature) {
-    this.moveToExtent(feature.getGeometry().getExtent());
-  }
-
-  zoomToExtent(extent: [number, number, number, number]) {
-    const view = this.ol.getView();
-    view.fit(extent, {
-      maxZoom: 17
-    });
-  }
-
-  zoomToFeature(feature: olFeature) {
-    this.zoomToExtent(feature.getGeometry().getExtent());
-  }
-
-  addOverlay(feature: olFeature) {
-    const geometry = feature.getGeometry();
-    if (geometry === null) {
+    const existingLayer = this.getLayerById(layer.id);
+    if (existingLayer !== undefined) {
+      existingLayer.visible = true;
       return;
     }
 
-    if (geometry.getType() === 'Point') {
-      feature.setStyle([this.overlayMarkerStyle]);
+    if (layer.zIndex === undefined || layer.zIndex === 0) {
+      const offset = layer.baseLayer ? 1 : 10;
+      layer.zIndex = this.layers.length + offset;
     }
 
-    this.overlayDataSource.ol.addFeature(feature);
-  }
-  getOverlayByID(id): olFeature {
-    if (this.overlayDataSource.ol.getFeatureById(id)) {
-      return this.overlayDataSource.ol.getFeatureById(id);
-    }
-    return;
-  }
+    layer.setMap(this);
+    this.layerWatcher.watchLayer(layer);
+    this.ol.addLayer(layer.ol);
 
-  removeOverlayByID(id) {
-    if (this.overlayDataSource.ol.getFeatureById(id)) {
-      this.overlayDataSource.ol.removeFeature(
-        this.overlayDataSource.ol.getFeatureById(id)
-      );
-    }
-  }
-
-  clearOverlay() {
-    if (this.overlayDataSource && this.overlayDataSource.ol) {
-      this.overlayDataSource.ol.clear();
-    }
+    return layer;
   }
 
   /**
-   * Get Scale of the map
-   * @return Scale of the map
+   * Remove a layer from the OL map and stop watching
+   * @param layer Layer
    */
-  getMapScale(approximative, resolution) {
-    if (approximative) {
-      let scale = this.getScale(resolution);
-      scale = Math.round(scale);
-      if (scale < 10000) {
-        return scale;
-      }
-      scale = Math.round(scale / 1000);
-      if (scale < 1000) {
-        return scale + 'K';
-      }
-      scale = Math.round(scale / 1000);
-      return scale + 'M';
-    }
-    return this.getScale(resolution);
-  }
-
-  getScale(dpi = 96) {
-    const unit = this.ol
-      .getView()
-      .getProjection()
-      .getUnits();
-    const resolution = this.ol.getView().getResolution();
-    const inchesPerMetre = 39.37;
-    return resolution * olproj.METERS_PER_UNIT[unit] * inchesPerMetre * dpi;
+  private doRemoveLayer(layer: Layer) {
+    this.layerWatcher.unwatchLayer(layer);
+    this.ol.removeLayer(layer.ol);
+    layer.setMap(undefined);
   }
 
   /**
-   * Get all layers activate in the map
-   * @return Array of layers
+   * Update the layers observable
+   * @param layers Layers
    */
-  getLayers() {
-    return this.layers;
+  private setLayers(layers: Layer[]) {
+    this.layers$.next(this.sortLayersByZIndex(layers).slice(0));
   }
 
   /**
-   * Get all the layers legend
-   * @return Array of legend
+   * Sort layers by descending zIndex
+   * @param layers Array of layers
+   * @returns The original array, sorted by zIndex
    */
-  getLayersLegend() {
-    // Get layers list
-    const layers = this.getLayers();
-    const listLegend = [];
-    let title;
-    let legendUrls;
-    let legendImage;
-    let heightPos = 0;
-    const newCanvas = document.createElement('canvas');
-    const newContext = newCanvas.getContext('2d');
-    newContext.font = '20px Calibri';
-    // For each layers in the map
-    layers.forEach(layer => {
-      // Add legend for only visible layer
-      if (layer.visible === true) {
-        // Get the list of legend
-        legendUrls = layer.dataSource.getLegend();
-        // If legend(s) are defined
-        if (legendUrls.length > 0) {
-          title = layer.title;
-          // For each legend
-          legendUrls.forEach(legendUrl => {
-            // If the legend really exist
-            if (legendUrl.url !== undefined) {
-              // Create an image for the legend
-              legendImage = new Image();
-              legendImage.crossOrigin = 'Anonymous';
-              legendImage.src = legendUrl.url;
-              legendImage.onload = () => {
-                newContext.fillText(title, 0, heightPos);
-                newContext.drawImage(legendImage, 0, heightPos + 20);
-                heightPos += legendImage.height + 5;
-              };
-              // Add legend info to the list
-              listLegend.push({
-                title,
-                url: legendUrl.url,
-                image: legendImage
-              });
-            }
-          });
-        }
-      }
-    });
-    return listLegend;
+  private sortLayersByZIndex(layers: Layer[]) {
+    // Sort by descending zIndex
+    return layers.sort((layer1: Layer, layer2: Layer) => layer2.zIndex - layer1.zIndex);
   }
 
-  setOverlayDataSourceStyle(
-    strokeRGBA: [number, number, number, number] = [0, 161, 222, 1],
-    strokeWidth: number = 2,
-    fillRGBA: [number, number, number, number] = [0, 161, 222, 0.15],
-    text?
-  ): olstyle.Style {
-    const stroke = new olstyle.Stroke({
-      color: strokeRGBA,
-      width: strokeWidth
-    });
-
-    const fill = new olstyle.Fill({
-      color: fillRGBA
-    });
-
-    return new olstyle.Style({
-      stroke,
-      fill,
-      image: new olstyle.Circle({
-        radius: 5,
-        stroke,
-        fill
-      }),
-      text: new olstyle.Text({
-        font: '12px Calibri,sans-serif',
-        text,
-        fill: new olstyle.Fill({ color: '#000' }),
-        stroke: new olstyle.Stroke({ color: '#fff', width: 3 })
-      })
-    });
+  /**
+   * Get layer index in the map's inenr array of layers
+   * @param layer Layer
+   * @returns The layer index
+   */
+  private getLayerIndex(layer: Layer) {
+    return this.layers.findIndex((_layer: Layer) => _layer === layer);
   }
 
-  setOverlayMarkerStyle(color = 'blue', text?): olstyle.Style {
-    let iconColor;
-    switch (color) {
-      case 'blue':
-      case 'red':
-      case 'yellow':
-      case 'green':
-        iconColor = color;
-        break;
-      default:
-        iconColor = 'blue';
-        break;
-    }
-    return new olstyle.Style({
-      image: new olstyle.Icon({
-        src: './assets/igo2/geo/icons/place_' + iconColor + '_36px.svg',
-        imgSize: [36, 36], // for ie
-        anchor: [0.5, 1]
-      }),
-      text: new olstyle.Text({
-        font: '12px Calibri,sans-serif',
-        text,
-        fill: new olstyle.Fill({ color: '#000' }),
-        stroke: new olstyle.Stroke({ color: '#fff', width: 3 })
-      })
-    });
-  }
-
+  // TODO: Create a GeolocationController with everything below
   geolocate(track = false) {
     let first = true;
     if (this.geolocation$$) {
@@ -532,17 +356,17 @@ export class IgoBaseMap {
         const extent = geometry.getExtent();
         if (
           this.geolocationFeature &&
-          this.overlayDataSource.ol.getFeatureById(
+          this.overlay.dataSource.ol.getFeatureById(
             this.geolocationFeature.getId()
           )
         ) {
-          this.overlayDataSource.ol.removeFeature(this.geolocationFeature);
+          this.overlay.dataSource.ol.removeFeature(this.geolocationFeature);
         }
         this.geolocationFeature = new olFeature({ geometry });
         this.geolocationFeature.setId('geolocationFeature');
-        this.addOverlay(this.geolocationFeature);
+        this.overlay.addFeature(this.geolocationFeature);
         if (first) {
-          this.zoomToExtent(extent);
+          this.viewController.zoomToExtent(extent);
         }
       } else if (first) {
         const view = this.ol.getView();
@@ -586,108 +410,4 @@ export class IgoBaseMap {
     }
   }
 
-  private sortLayers() {
-    // Sort by descending zIndex
-    this.layers.sort((layer1, layer2) => layer2.zIndex - layer1.zIndex);
-  }
-
-  private getLayerIndex(layer: Layer) {
-    return this.layers.findIndex(layer2 => layer2 === layer);
-  }
-}
-
-// TODO: move that to a better place
-export interface MapMovement {
-  extent: [number, number, number, number];
-  action: string;
-}
-
-/**
- * This class extends the base IgoMap and adds a few functionnalities.
- * @todo Move "view" stuff elsewhere
- * @todo Bakcport this to the library
- */
-export class IgoMap extends IgoBaseMap {
-  /**
-   * Overlay layer
-   */
-  // public overlay: Overlay;
-
-  /**
-   * Movement stream
-   */
-  private movement$ = new Subject<MapMovement>();
-
-  /**
-   * Subscription to the movement stream
-   */
-  private movement$$: Subscription;
-
-  constructor(options?: MapOptions) {
-    super(options);
-    // this.overlay = new Overlay(this);
-  }
-
-  /**
-   * Set the map view and subscribe to the movement stream
-   * @param options Map view options
-   */
-  setView(options: MapViewOptions) {
-    this.unsubscribeToMovement();
-    super.setView(options);
-    this.subscribeToMovement();
-  }
-
-  /**
-   * Move to extent after a short delay (100ms) unless
-   * a new movement gets registered in the meantime.
-   * @param extent Extent to move to
-   */
-  delayedMoveToExtent(extent: [number, number, number, number]) {
-    this.movement$.next({ extent, action: 'move' });
-  }
-
-  /**
-   * Zoom to extent after a short delay (100ms) unless
-   * a new movement gets registered in the meantime.
-   * @param extent Extent to zoom to
-   */
-  delayedZoomToExtent(extent: [number, number, number, number]) {
-    this.movement$.next({ extent, action: 'zoom' });
-  }
-
-  /**
-   * Subscribe to the movement stream and apply only the latest
-   * when many are registered in a interval or 100ms or less.
-   */
-  private subscribeToMovement() {
-    this.movement$$ = this.movement$
-      .pipe(
-        debounceTime(100),
-        distinctUntilChanged()
-      )
-      .subscribe((movement: MapMovement) => this.doMovement(movement));
-  }
-
-  /**
-   * Unsubscribe to the movement stream
-   */
-  private unsubscribeToMovement() {
-    if (this.movement$$ !== undefined) {
-      this.movement$$.unsubscribe();
-      this.movement$$ = undefined;
-    }
-  }
-
-  /**
-   * Do the given movement retrieved from the stream
-   * @param movement Map movement
-   */
-  private doMovement(movement: MapMovement) {
-    if (movement.action === 'move') {
-      this.moveToExtent(movement.extent);
-    } else if (movement.action === 'zoom') {
-      this.zoomToExtent(movement.extent);
-    }
-  }
 }

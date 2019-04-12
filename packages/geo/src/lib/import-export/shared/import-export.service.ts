@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 import * as olformat from 'ol/format';
 import * as olstyle from 'ol/style';
+import OlFeature from 'ol/Feature';
 
 import { ConfigService, MessageService, LanguageService } from '@igo2/core';
 import { MapService } from '../../map/shared/map.service';
@@ -15,7 +16,7 @@ import { ExportOptions } from './import-export.interface';
   providedIn: 'root'
 })
 export class ImportExportService {
-  private urlApi: string;
+  private exportUrl: string;
 
   constructor(
     private http: HttpClient,
@@ -24,7 +25,7 @@ export class ImportExportService {
     private messageService: MessageService,
     private languageService: LanguageService
   ) {
-    this.urlApi = this.config.getConfig('importExport.url');
+    this.exportUrl = this.config.getConfig('importExport.url');
   }
 
   public import(fileList: Array<File>, sourceSrs = 'EPSG:4326') {
@@ -73,15 +74,24 @@ export class ImportExportService {
   public export(data: ExportOptions) {
     const map = this.mapService.getMap();
     const layer = map.getLayerById(data.layer);
-    const source: any = layer.ol.getSource();
+    const olSource = layer.ol.getSource();
 
-    const formatStr: any = data.format;
+    const formatStr = data.format;
     const format =
       data.format === 'shapefile'
         ? new olformat.GeoJSON()
         : new olformat[formatStr]();
 
-    const featuresText = format.writeFeatures(source.getFeatures(), {
+    const olFeatures = olSource.getFeatures().map((olFeature: OlFeature) => {
+      const keys = olFeature.getKeys().filter((key: string) => !key.startsWith('_'));
+      const properties = keys.reduce((acc: object, key: string) => {
+        acc[key] = olFeature.get(key);
+        return acc;
+      }, {geometry: olFeature.getGeometry()});
+      return new OlFeature(properties);
+    });
+
+    const featuresText = format.writeFeatures(olFeatures, {
       dataProjection: 'EPSG:4326',
       featureProjection: map.projection,
       featureType: 'feature',
@@ -100,12 +110,12 @@ export class ImportExportService {
   private download(
     text: string,
     fileName: string,
-    mineType = 'text/plain;charset=utf-8'
+    mimeType = 'text/plain;charset=utf-8'
   ) {
     const element = document.createElement('a');
     element.setAttribute(
       'href',
-      `data:${mineType},${encodeURIComponent(text)}`
+      `data:${mimeType},${encodeURIComponent(text)}`
     );
     element.setAttribute('download', fileName);
 
@@ -217,7 +227,7 @@ export class ImportExportService {
     const translate = this.languageService.translate;
     const layerTitle = file.name.substr(0, file.name.lastIndexOf('.'));
     const map = this.mapService.getMap();
-    const url = this.urlApi + '/convert';
+    const url = this.exportUrl + '/convert';
 
     const formData = new FormData();
     formData.append('upload', file);
@@ -253,7 +263,7 @@ export class ImportExportService {
   }
 
   private callExportService(geojson, title) {
-    const url = this.urlApi + '/convertJson';
+    const url = this.exportUrl + '/convertJson';
 
     const form = document.createElement('form');
     form.setAttribute('method', 'post');
