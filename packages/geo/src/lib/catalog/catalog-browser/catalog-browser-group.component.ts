@@ -149,7 +149,7 @@ export class CatalogBrowserGroupComponent implements OnInit, OnDestroy {
     const added = event.added;
     const layer = event.layer;
 
-    const layersAdded = this.store.view.all()
+    const layersAdded = this.store.dataView.all()
       .filter((item: CatalogItem) => item.id !== layer.id)
       .map((item: CatalogItem) => this.state.get(item).added || false);
 

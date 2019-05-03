@@ -3,7 +3,6 @@ import { catchError, tap } from 'rxjs/operators';
 
 import {
   EntityKey,
-  EntityTransactionOptions,
   EntityOperation,
   EntityOperationState
 } from './entity.interfaces';
@@ -15,6 +14,10 @@ export type EntityTransactionCommitHandler = (
   transaction: EntityTransaction,
   operations: EntityOperation[]
 ) => Observable<any>;
+
+export interface EntityTransactionOptions {
+  getKey?: (entity: object) => EntityKey;
+}
 
 /**
  * This class holds a reference to the insert, update and delete

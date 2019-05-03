@@ -4,7 +4,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { FEATURE, Feature, FeatureGeometry } from '../../../feature';
+import { FEATURE, Feature, Featurizer, GeoJsonGeometry } from '../../../feature';
 
 import { SearchResult } from '../search.interfaces';
 import { SearchSource, TextSearch } from './source';
@@ -86,17 +86,17 @@ export class NominatimSearchSource extends SearchSource implements TextSearch {
         title: data.display_name,
         icon: 'place'
       },
-      data: {
+      data: new Featurizer().fromGeoJson({
+        id,
         type: FEATURE,
-        projection: 'EPSG:4326',
         geometry,
-        extent,
         properties,
         meta: {
-          id,
-          title: data.display_name
+          title: data.display_name,
+          projection: 'EPSG:4326',
+          extent
         }
-      }
+      })
     };
   }
 
@@ -110,7 +110,7 @@ export class NominatimSearchSource extends SearchSource implements TextSearch {
     };
   }
 
-  private computeGeometry(data: NominatimData): FeatureGeometry {
+  private computeGeometry(data: NominatimData): GeoJsonGeometry {
     return {
       type: 'Point',
       coordinates: [parseFloat(data.lon), parseFloat(data.lat)]

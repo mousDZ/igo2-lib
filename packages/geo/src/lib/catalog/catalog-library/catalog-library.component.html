@@ -1,5 +1,5 @@
 <igo-list [navigation]="false">
-  <ng-template ngFor let-catalog [ngForOf]="store.view.all$() | async">
+  <ng-template ngFor let-catalog [ngForOf]="store.dataView.all$() | async">
     <igo-catalog-library-item
       igoListItem
       color="accent"

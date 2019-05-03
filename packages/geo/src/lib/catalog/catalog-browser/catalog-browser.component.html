@@ -1,5 +1,5 @@
 <igo-list [navigation]="false" [selection]="false">
-  <ng-template ngFor let-item [ngForOf]="store.view.all$() | async">
+  <ng-template ngFor let-item [ngForOf]="store.dataView.all$() | async">
     <ng-container *ngIf="isGroup(item)">
       <igo-catalog-browser-group
         [group]="item"

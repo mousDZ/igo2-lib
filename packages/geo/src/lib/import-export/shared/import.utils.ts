@@ -4,12 +4,12 @@ import { MessageService, LanguageService } from '@igo2/core';
 
 import { FeatureDataSource } from '../../datasource/shared/datasources/feature-datasource';
 import { Feature } from '../../feature/shared/feature.interfaces';
-import { featureToOl, moveToOlFeatures } from '../../feature/shared/feature.utils';
+import { moveToOlFeatures, setFeatureProjection } from '../../feature/shared/feature.utils';
 import { VectorLayer } from '../../layer/shared/layers/vector-layer';
 import { IgoMap } from '../../map/shared/map';
 
 export function addLayerAndFeaturesToMap(features: Feature[], map: IgoMap, layerTitle: string): VectorLayer {
-  const olFeatures = features.map((feature: Feature) => featureToOl(feature, map.projection));
+  const olFeatures = features.map((feature: Feature) => setFeatureProjection(feature, map.projection).ol);
 
   const r = Math.floor(Math.random() * 255);
   const g = Math.floor(Math.random() * 255);

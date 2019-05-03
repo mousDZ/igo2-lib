@@ -1,66 +1,39 @@
 import { FormGroup } from '@angular/forms';
 
-import { GeoJsonGeometryTypes } from 'geojson';
+import OlFeature from 'ol/Feature';
 
-import { EntityKey, EntityStoreOptions } from '@igo2/common';
+import { EntityKey } from '@igo2/common';
 
-import { VectorLayer } from '../../layer';
-import { IgoMap } from '../../map';
-import { FeatureMotion } from './feature.enums';
 
-export interface Feature<P = {[key: string]: any}> {
-  type: string;
-  projection: string;
-  geometry: FeatureGeometry;
-  properties: P;
-  extent?: [number, number, number, number];
-  meta?: FeatureMeta;
+export interface Feature {
+  id: EntityKey;
+  ol: OlFeature;
+  meta: FeatureMeta;
 }
 
 export interface FeatureMeta {
-  id: EntityKey;
   title?: string;
   mapTitle?: string;
   order?: number;
   alias?: {[key: string]: string};
+  projection?: string;
+  extent?: [number, number, number, number];
 }
 
-export interface FeatureGeometry {
-  type: GeoJsonGeometryTypes;
-  coordinates: any;
+export interface GeoJsonFeature<P, G extends GeoJsonGeometry = GeoJsonGeometry> {
+  type: string;
+  geometry: G;
+  properties: P;
+  id?: EntityKey;
+  meta?: FeatureMeta;
 }
 
-export interface FeatureStoreOptions extends EntityStoreOptions {
-  map: IgoMap;
-  layer?: VectorLayer;
+export type GeoJsonGeometry = {
+  type: string;
+  coordinates: number[] | number[][] | number[][][];
 }
 
-export interface FeatureStoreStrategyOptions {
-  // When the store moves features into view, the view extent, which is also the features extent,
-  // is scaled by those factors, effectively resulting in a decentered view or a more zoomed in/out view.
-  // These factors are applied to the top, right, bottom and left directions, in that order.
-  // A factor of 1 means the distance from the center, in that direction, is doubled.
-  viewScale?: [number, number, number, number];
-  // Features extent to view extent ratio used to determine if the store should trigger
-  // a map zoom when features are added to it.
-  areaRatio?: number;
-}
-
-export interface FeatureStoreLoadingStrategyOptions extends FeatureStoreStrategyOptions {
-  getFeatureId?: (Feature) => EntityKey;
-  motion?: FeatureMotion;
-}
-
-export interface FeatureStoreLoadingLayerStrategyOptions extends FeatureStoreStrategyOptions {}
-
-export interface FeatureStoreSelectionStrategyOptions extends FeatureStoreStrategyOptions {
-  map: IgoMap;
-  getFeatureId?: (Feature) => EntityKey;
-  motion?: FeatureMotion;
-  layer?: VectorLayer;
-  many?: boolean;
-  hitTolerance?: number;
-}
+export type GeoJsonProperties = {[key: string]: any;} | null;
 
 export interface FeatureFormSubmitEvent {
   form: FormGroup;

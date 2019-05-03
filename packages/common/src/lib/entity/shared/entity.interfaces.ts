@@ -17,20 +17,6 @@ export interface EntityRecord<E extends object, S extends EntityState = EntitySt
   state: S;
 }
 
-export interface EntityStoreOptions {
-  getKey?: (entity: object) => EntityKey;
-  getProperty?: (entity: object, property: string) => any;
-}
-
-export interface EntityStateManagerOptions {
-  getKey?: (entity: object) => EntityKey;
-  store?: EntityStore<object>;
-}
-
-export interface EntityTransactionOptions {
-  getKey?: (entity: object) => EntityKey;
-}
-
 export type EntityFilterClause<E = object> = (entity: E) => boolean;
 
 export interface EntitySortClause<E = object> {

@@ -2,14 +2,6 @@ import * as olextent from 'ol/extent';
 import * as olproj from 'ol/proj';
 import * as olstyle from 'ol/style';
 import OlFeature from 'ol/Feature';
-import OlFormatGeoJSON from 'ol/format/GeoJSON';
-
-import {
-  EntityKey,
-  getEntityId,
-  getEntityRevision,
-  getEntityProperty
-} from '@igo2/common';
 
 import { IgoMap } from '../../map';
 import { VectorLayer } from '../../layer';
@@ -22,74 +14,48 @@ import {
   FeatureStoreSelectionStrategy
 } from './strategies';
 
-/**
- * Create an Openlayers feature object out of a feature definition.
- * The output object has a reference to the feature id.
- * @param feature Feature definition
- * @param projectionOut Feature object projection
- * @returns OpenLayers feature object
- */
-export function featureToOl(
-  feature: Feature,
-  projectionOut: string,
-  getId?: (Feature) => EntityKey
-): OlFeature {
-  getId = getId ? getId : getEntityId;
-
-  const olFormat = new OlFormatGeoJSON();
-  const olFeature = olFormat.readFeature(feature, {
-    dataProjection: feature.projection,
-    featureProjection: projectionOut
-  });
-
-  olFeature.setId(getId(feature));
-
-  if (feature.projection !== undefined) {
-    olFeature.set('_projection', feature.projection, true);
-  }
-
-  if (feature.extent !== undefined) {
-    olFeature.set('_extent', feature.extent, true);
-  }
-
-  const mapTitle = getEntityProperty(feature, 'meta.mapTitle');
-  if (mapTitle !== undefined) {
-    olFeature.set('_mapTitle', mapTitle, true);
-  }
-
-  olFeature.set('_entityRevision', getEntityRevision(feature), true);
-
-  return olFeature;
+export function setFeatureProjection(feature: Feature, projection: string, sourceProjection?: string): Feature {
+  sourceProjection = sourceProjection || feature.meta.projection || 'EPSG:4326';
+  feature.ol.getGeometry.transform(sourceProjection, projection);
+  feature.meta.projection = projection;
+  return feature;
 }
 
 /**
- * Create a feature object out of an OL feature
- * The output object has a reference to the feature id.
- * @param olFeature OL Feature
- * @param projectionIn OL feature projection
- * @param projectionOut Feature projection
- * @returns Feature
+ * Set the layer's features and perform a motion to make them visible.
+ * @param features Openlayers feature objects
+ * @param motion Optional: The type of motion to perform
  */
-export function featureFromOl(
-  olFeature: OlFeature,
-  projectionIn: string,
-  projectionOut = 'EPSG:4326'
-): Feature {
-  const olFormat = new OlFormatGeoJSON();
-  const feature = olFormat.writeFeatureObject(olFeature, {
-    dataProjection: projectionOut,
-    featureProjection: projectionIn
+export function computeOlFeaturesDiff(source: OlFeature[],target: OlFeature[]): {
+  add: OlFeature[];
+  remove: OlFeature;
+} {
+  const olFeaturesMap = new Map();
+  target.forEach((olFeature: OlFeature) => {
+    olFeaturesMap.set(olFeature.getId(), olFeature);
   });
 
-  return Object.assign({}, feature, {
-    projection: projectionOut,
-    extent: olFeature.get('_extent'),
-    meta: {
-      id: olFeature.getId(),
-      revision: olFeature.getRevision(),
-      mapTitle: olFeature.get('_mapTitle')
+  const olFeaturesToRemove = [];
+  source.forEach((olFeature: OlFeature) => {
+    const newOlFeature = olFeaturesMap.get(olFeature.getId());
+    if (newOlFeature === undefined) {
+      olFeaturesToRemove.push(olFeature);
+    } else if (newOlFeature.get('_entityRevision') !== olFeature.get('_entityRevision')) {
+      olFeaturesToRemove.push(olFeature);
+    } else {
+      olFeaturesMap.delete(newOlFeature.getId());
     }
   });
+
+  const olFeaturesToAddIds = Array.from(olFeaturesMap.keys());
+  const olFeaturesToAdd = target.filter((olFeature: OlFeature) => {
+    return olFeaturesToAddIds.indexOf(olFeature.getId()) >= 0;
+  });
+
+  return {
+    add: olFeaturesToAdd,
+    remove: olFeaturesToRemove
+  }
 }
 
 /**
@@ -215,6 +181,31 @@ export function featuresAreTooDeepInView(
  * @param scale If this is defined, the original view will be scaled
  *  by that factor before any logic is applied.
  */
+export function moveToFeatures(
+  map: IgoMap,
+  features: Feature[],
+  motion: FeatureMotion = FeatureMotion.Default,
+  scale?: [number, number, number, number],
+  areaRatio?: number
+) {
+  moveToOlFeatures(
+    map,
+    features.map((feature: Feature) => feature.ol),
+    motion,
+    scale,
+    areaRatio
+  );
+}
+
+/**
+ * Fit view to include the features extent.
+ * By default, this method will let the features occupy about 50% of the viewport.
+ * @param map Map
+ * @param olFeatures OL features
+ * @param motion To motion to the new map view
+ * @param scale If this is defined, the original view will be scaled
+ *  by that factor before any logic is applied.
+ */
 export function moveToOlFeatures(
   map: IgoMap,
   olFeatures: OlFeature[],
@@ -287,15 +278,14 @@ export function tryAddLoadingStrategy(store: FeatureStore, strategy?: FeatureSto
   }
 
   strategy = strategy ? strategy : new FeatureStoreLoadingStrategy({});
-  store.addStrategy(strategy);
-  strategy.activate();
+  store.addStrategy(strategy, true);
 }
 
 /**
  * Try to add a selection strategy to a store and activate it.
  * If no strategy is given to that function, a basic one will be created.
  * @param store The store to bind the selection strategy
- * @param [strategy] An optional selection strategy
+ * @param strategy An optional selection strategy
  */
 export function tryAddSelectionStrategy(store: FeatureStore, strategy?: FeatureStoreSelectionStrategy) {
   if (store.getStrategyOfType(FeatureStoreSelectionStrategy) !== undefined) {
@@ -305,6 +295,5 @@ export function tryAddSelectionStrategy(store: FeatureStore, strategy?: FeatureS
   strategy = strategy ? strategy : new FeatureStoreSelectionStrategy({
     map: store.map
   });
-  store.addStrategy(strategy);
-  strategy.activate();
+  store.addStrategy(strategy, true);
 }

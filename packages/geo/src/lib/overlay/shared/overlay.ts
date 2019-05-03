@@ -3,8 +3,8 @@ import OlFeature from 'ol/Feature';
 import {
   Feature,
   FeatureMotion,
-  featureToOl,
-  moveToOlFeatures
+  moveToOlFeatures,
+  setFeatureProjection
 } from '../../feature';
 import { FeatureDataSource } from '../../datasource';
 import { VectorLayer } from '../../layer';
@@ -89,7 +89,7 @@ export class Overlay {
   ) {
     const olFeatures = [];
     features.forEach((feature: Feature) => {
-      const olFeature = featureToOl(feature, this.map.projection);
+      const olFeature = setFeatureProjection(feature, this.map.projection).ol;
       const olGeometry = olFeature.getGeometry();
       if (olGeometry === null) {
         return;

@@ -1,20 +1,32 @@
-import OlFeature from 'ol/Feature';
-
-import { ListenerFunction } from 'ol/events';
-
 import { Subscription, combineLatest } from 'rxjs';
 import { map, debounceTime, skip } from 'rxjs/operators';
 
-import { EntityKey, EntityRecord } from '@igo2/common';
+import OlFeature from 'ol/Feature';
+import * as olstyle from 'ol/style';
+import { ListenerFunction } from 'ol/events';
+
+import {
+  EntityKey,
+  EntityRecord,
+  EntityStoreStrategy,
+  EntityStoreStrategyOptions
+} from '@igo2/common';
 
 import { FeatureDataSource } from '../../../datasource';
 import { VectorLayer } from '../../../layer';
 import { IgoMap } from '../../../map';
 
-import { Feature, FeatureStoreSelectionStrategyOptions } from '../feature.interfaces';
+import { Feature } from '../feature.interfaces';
 import { FeatureStore } from '../store';
-import { FeatureStoreStrategy } from './strategy';
 import { FeatureMotion } from '../feature.enums';
+
+export interface FeatureStoreSelectionStrategyOptions extends EntityStoreStrategyOptions {
+  map: IgoMap;
+  motion?: FeatureMotion;
+  style?: olstyle.Style;
+  many?: boolean;
+  hitTolerance?: number;
+}
 
 /**
  * This strategy synchronizes a store and a layer selected entities.
@@ -26,7 +38,7 @@ import { FeatureMotion } from '../feature.enums';
  * would trigger the strategy of each layer and they would cancel
  * each other as well as move the map view around needlessly.
  */
-export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
+export class FeatureStoreSelectionStrategy extends EntityStoreStrategy {
 
   /**
    * Listener to the map click event that allows selecting a feature
@@ -62,7 +74,7 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
    */
   bindStore(store: FeatureStore) {
     super.bindStore(store);
-    if (this.isActive() === true) {
+    if (this.active === true) {
       // Force reactivation
       this.activate();
     }
@@ -75,7 +87,7 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
    */
   unbindStore(store: FeatureStore) {
     super.unbindStore(store);
-    if (this.isActive() === true) {
+    if (this.active === true) {
       // Force reactivation
       this.activate();
     }
@@ -130,7 +142,7 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
     });
     this.stores$$ = combineLatest(...stores$)
       .pipe(
-        debounceTime(25),
+        debounceTime(10),
         skip(1), // Skip intial selection
         map((features: Array<Feature[]>) => features.reduce((a, b) => a.concat(b)))
       ).subscribe((features: Feature[]) => this.onSelectFromStore(features));
@@ -153,7 +165,7 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
   private listenToMapClick() {
     this.mapClickListener = this.map.ol.on('singleclick', (event) => {
       const olFeatures = event.map.getFeaturesAtPixel(event.pixel, {
-        hitTolerance: this.options.hitTolerance || 0,
+        hitTolerance: this.options.hitTolerance || 5,
         layerFilter: (olLayer) => {
           const storeOlLayer = this.stores.find((store: FeatureStore) => {
             return store.layer.ol === olLayer;
@@ -179,7 +191,7 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
 
   /**
    * When features are selected from the store, add
-   * them to this startegy's overlay layer (select on map)
+   * them to this strategy's overlay layer (select on map)
    * @param features Store features
    */
   private onSelectFromStore(features: Feature[]) {
@@ -194,8 +206,7 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
       features,
       doMotion ? motion : FeatureMotion.None,
       this.options.viewScale,
-      this.options.areaRatio,
-      this.options.getFeatureId
+      this.options.areaRatio
     );
   }
 
@@ -276,25 +287,19 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
    * Create an overlay store that'll contain the selected features.
    * @returns Overlay store
    */
-  private createOverlayStore(): FeatureStore {
-    const overlayLayer = this.options.layer
-      ? this.options.layer
-      : this.createOverlayLayer();
-    return new FeatureStore([], {map: this.map}).bindLayer(overlayLayer);
-  }
-
-  /**
-   * Create an overlay store that'll contain the selected features.
-   * @returns Overlay layer
-   */
-  private createOverlayLayer(): VectorLayer {
-    return new VectorLayer({
+  private createOverlayStore() {
+    const overlayLayer = new VectorLayer({
       zIndex: 300,
       source: new FeatureDataSource(),
-      style: undefined,
+      style: this.options.style ? this.options.style : this.createDefaultOverlayStyle(),
       showInLayerList: false,
       exportable: false,
       browsable: false
+    });
+
+    return new FeatureStore([], {
+      map: this.map,
+      layer: overlayLayer
     });
   }
 
@@ -303,16 +308,39 @@ export class FeatureStoreSelectionStrategy extends FeatureStoreStrategy {
    * features.
    */
   private addOverlayLayer() {
-    if (this.overlayStore.layer.map === undefined) {
-      this.map.addLayer(this.overlayStore.layer);
-    }
+    this.map.addLayer(this.overlayStore.layer);
   }
 
   /**
    * Remove the overlay layer from the map
    */
   private removeOverlayLayer() {
-    this.overlayStore.source.ol.clear();
+    this.overlayStore.layer.ol.getSource().clear();
     this.map.removeLayer(this.overlayStore.layer);
+  }
+
+  /**
+   * Create a default style for the overlay layer
+   * @ Default overlay style
+   */
+  private createDefaultOverlayStyle(): olstyle.Style {
+    const stroke = new olstyle.Stroke({
+      width: 2,
+      color: [102, 255, 255, 1]
+    });
+  
+    const fill = new olstyle.Stroke({
+      color: [102, 255, 255, 0.15]
+    });
+  
+    return new olstyle.Style({
+      stroke,
+      fill,
+      image: new olstyle.Circle({
+        radius: 5,
+        stroke,
+        fill
+      })
+    });
   }
 }

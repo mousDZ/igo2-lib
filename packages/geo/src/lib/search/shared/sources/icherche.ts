@@ -8,7 +8,7 @@ import { LanguageService } from '@igo2/core';
 
 import { ObjectUtils } from '@igo2/utils';
 
-import { FEATURE, Feature } from '../../../feature';
+import { FEATURE, Feature, Featurizer } from '../../../feature';
 
 import { SearchResult } from '../search.interfaces';
 import { SearchSource, TextSearch, ReverseSearch } from './source';
@@ -112,17 +112,19 @@ export class IChercheSearchSource extends SearchSource implements TextSearch {
     const id = [this.getId(), properties.type, data._id].join('.');
     return {
       source: this,
-      data: {
-        type: FEATURE,
-        projection: 'EPSG:4326',
-        geometry: data.geometry,
-        extent: data.bbox,
-        properties,
-        meta: {
+      data: new Featurizer().fromGeoJson(
+        {
           id,
-          title: data.properties.recherche
+          type: FEATURE,
+          geometry: data.geometry,
+          properties,
+          meta: {
+            title: data.properties.recherche,
+            projection: 'EPSG:4326',
+            extent: data.bbox
+          }
         }
-      },
+      ),
       meta: {
         dataType: FEATURE,
         id,
@@ -222,17 +224,17 @@ export class IChercheReverseSearchSource extends SearchSource
 
     return {
       source: this,
-      data: {
+      data: new Featurizer().fromGeoJson({
+        id,
         type: FEATURE,
-        projection: 'EPSG:4326',
         geometry: data.geometry,
-        extent,
         properties,
         meta: {
-          id,
-          title: data.properties.nom
+          title: data.properties.nom,
+          projection: 'EPSG:4326',
+          extent
         }
-      },
+      }),
       meta: {
         dataType: FEATURE,
         id,

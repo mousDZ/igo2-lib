@@ -33,7 +33,8 @@ import {
   FeatureStoreSelectionStrategy,
   tryBindStoreLayer,
   tryAddLoadingStrategy,
-  tryAddSelectionStrategy
+  tryAddSelectionStrategy,
+  Featurizer
 } from '../../feature';
 import { DrawControl } from '../../geometry';
 import { VectorLayer } from '../../layer';
@@ -580,17 +581,18 @@ export class MeasurerComponent implements OnInit, OnDestroy {
       featureProjection: projection,
       dataProjection: projection
     });
-    const feature = {
+    const featurizer = new Featurizer();
+    const feature = featurizer.fromGeoJson({
+      id: uuid(),
       type: FEATURE,
       geometry,
-      projection: projection.getCode(),
       properties: {
         measure: olGeometry.get('_measure')
       },
       meta: {
-        id: uuid()
+        projection: projection.getCode()   
       }
-    };
+    });
     this.store.insert(feature);
   }
 

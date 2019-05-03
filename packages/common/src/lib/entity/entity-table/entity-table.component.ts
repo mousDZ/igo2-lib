@@ -108,7 +108,7 @@ export class EntityTableComponent implements OnInit, OnDestroy, OnChanges  {
    * Data source consumable by the underlying material table
    * @internal
    */
-  get dataSource(): BehaviorSubject<object[]> { return this.store.view.all$(); }
+  get dataSource(): BehaviorSubject<object[]> { return this.store.dataView.all$(); }
 
   /**
    * Whether selection is supported
@@ -188,12 +188,12 @@ export class EntityTableComponent implements OnInit, OnDestroy, OnChanges  {
       .find((c: EntityTableColumn) => c.name === event.active);
 
     if (direction === 'asc' || direction === 'desc') {
-      this.store.view.sort({
+      this.store.dataView.sort({
         valueAccessor: (entity: object) => this.getValue(entity, column),
         direction
       });
     } else {
-      this.store.view.sort(undefined);
+      this.store.dataView.sort(undefined);
     }
   }
 
@@ -231,7 +231,7 @@ export class EntityTableComponent implements OnInit, OnDestroy, OnChanges  {
 
     this.store.state.updateAll({selected: toggle});
     if (toggle === true) {
-      this.entitySelectChange.emit({added: [this.store.view.all()]});
+      this.entitySelectChange.emit({added: [this.store.dataView.all()]});
     }
   }
 
@@ -262,7 +262,7 @@ export class EntityTableComponent implements OnInit, OnDestroy, OnChanges  {
     const selectionCount = selectedRecords.length;
     return selectionCount === 0 ?
       states.None :
-      (selectionCount === this.store.view.count ? states.All : states.Some);
+      (selectionCount === this.store.dataView.count ? states.All : states.Some);
   }
 
   /**

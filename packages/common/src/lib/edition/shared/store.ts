@@ -12,7 +12,7 @@ export class EditorStore extends EntityStore<Editor> {
    * @param editor Editor
    */
   activateEditor(editor: Editor) {
-    const active = this.view.firstBy((_editor: Editor) => _editor.isActive() === true);
+    const active = this.dataView.firstBy((_editor: Editor) => _editor.isActive() === true);
     if (active !== undefined) {
       active.deactivate();
     }

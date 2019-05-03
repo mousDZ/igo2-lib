@@ -1,16 +1,22 @@
 import { BehaviorSubject } from 'rxjs';
 
+import { EntityKey, EntityRecord, EntityState } from './entity.interfaces';
 import { EntityStateManager } from './state';
+import { EntityStoreStrategy } from './strategy';
 import { EntityView } from './view';
-import { EntityKey, EntityState, EntityRecord, EntityStoreOptions } from './entity.interfaces';
 import { getEntityId, getEntityProperty } from './entity.utils';
+
+export interface EntityStoreOptions {
+  getKey?: (entity: object) => EntityKey;
+  getProperty?: (entity: object, property: string) => any;
+}
 
 /**
  * An entity store class holds any number of entities
  * as well as their state. It can be observed, filtered and sorted and
  * provides methods to insert, update or delete entities.
  */
-export class EntityStore<E extends object, S extends EntityState = EntityState> {
+export class EntityStore<E extends object = object, S extends EntityState = EntityState> {
 
   /**
    * Observable of the raw entities
@@ -25,7 +31,7 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
   /**
    * View of all the entities
    */
-  readonly view: EntityView<E>;
+  readonly dataView: EntityView<E>;
 
   /**
    * View of all the entities and their state
@@ -64,20 +70,26 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
    */
   get empty(): boolean { return this.count === 0; }
 
+  /**
+   * Feature store strategies responsible of synchronizing the store
+   * and the layer
+   */
+  private strategies: EntityStoreStrategy[] = [];
+
   constructor(entities: E[], options: EntityStoreOptions = {}) {
     this.getKey = options.getKey ? options.getKey : getEntityId;
     this.getProperty = options.getProperty ? options.getProperty : getEntityProperty;
 
     this.state = new EntityStateManager<E, S>({store: this});
-    this.view = new EntityView<E>(this.entities$);
-    this.stateView = new EntityView<E, EntityRecord<E, S>>(this.view.all$()).join({
+    this.dataView = new EntityView<E>(this.entities$);
+    this.stateView = new EntityView<E, EntityRecord<E, S>>(this.dataView.all$()).join({
       source: this.state.change$,
       reduce: (entity: E): EntityRecord<E, S> => {
         return {entity, state: this.state.get(entity)};
       }
     });
 
-    this.view.lift();
+    this.dataView.lift();
     this.stateView.lift();
 
     if (entities.length > 0) {
@@ -132,14 +144,14 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
    */
   clear() {
     this.stateView.clear();
-    this.view.clear();
+    this.dataView.clear();
     this.state.clear();
     this.softClear();
   }
 
   destroy() {
     this.stateView.destroy();
-    this.view.destroy();
+    this.dataView.destroy();
     this.clear();
   }
 
@@ -195,6 +207,73 @@ export class EntityStore<E extends object, S extends EntityState = EntityState> 
     entities.forEach((entity: E) => this.index.delete(this.getKey(entity)));
     this._pristine = false;
     this.next();
+  }
+
+  /**
+   * Add a strategy to this store
+   * @param strategy Feature store strategy
+   * @returns Feature store
+   */
+  addStrategy(strategy: EntityStoreStrategy, activate: boolean = false) {
+    const existingStrategy = this.strategies.find((_strategy: EntityStoreStrategy) => {
+      return strategy.constructor === _strategy.constructor;
+    });
+    if (existingStrategy !== undefined) {
+      throw new Error('A strategy of this type already exists on that EntityStore.');
+    }
+
+    this.strategies.push(strategy);
+    strategy.bindStore(this);
+
+    if (activate === true) {
+      strategy.activate();
+    }
+  }
+
+  /**
+   * Remove a strategy from this store
+   * @param strategy Feature store strategy
+   * @returns Feature store
+   */
+  removeStrategy(strategy: EntityStoreStrategy) {
+    const index = this.strategies.indexOf(strategy);
+    if (index >= 0) {
+      this.strategies.splice(index, 1);
+      strategy.unbindStore(this);
+    }
+  }
+
+  /**
+   * Return strategies of a given type
+   * @param type Feature store strategy class
+   * @returns Strategies
+   */
+  getStrategyOfType(type: typeof EntityStoreStrategy): EntityStoreStrategy {
+    return this.strategies.find((strategy: EntityStoreStrategy) => {
+      return strategy instanceof type;
+    });
+  }
+
+  /**
+   * Activate strategies of a given type
+   * @param type Feature store strategy class
+   */
+  activateStrategyOfType(type: typeof EntityStoreStrategy) {
+    const strategy = this.getStrategyOfType(type);
+    if (strategy !== undefined) {
+      strategy.activate();
+    }
+  }
+
+  /**
+   * Deactivate strategies of a given type
+   * @param type Feature store strategy class
+   */
+  deactivateStrategyOfType(type: typeof EntityStoreStrategy) {
+    const strategy = this.getStrategyOfType(type);
+    if (strategy !== undefined) {
+      strategy.deactivate();
+    }
   }
 
   /**

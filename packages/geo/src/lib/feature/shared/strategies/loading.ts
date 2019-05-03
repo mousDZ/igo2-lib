@@ -1,9 +1,21 @@
 import { Subscription } from 'rxjs';
 
+import { EntityStoreStrategy, EntityStoreStrategyOptions } from '@igo2/common';
 import { FeatureMotion } from '../feature.enums';
-import { Feature, FeatureStoreLoadingStrategyOptions } from '../feature.interfaces';
+import { Feature } from '../feature.interfaces';
 import { FeatureStore } from '../store';
-import { FeatureStoreStrategy } from './strategy';
+
+export interface FeatureStoreLoadingStrategyOptions extends EntityStoreStrategyOptions {
+  motion?: FeatureMotion;
+  // When the store moves features into view, the view extent, which is also the features extent,
+  // is scaled by those factors, effectively resulting in a decentered view or a more zoomed in/out view.
+  // These factors are applied to the top, right, bottom and left directions, in that order.
+  // A factor of 1 means the distance from the center, in that direction, is doubled.
+  viewScale?: [number, number, number, number];
+  // Features extent to view extent ratio used to determine if the store should trigger
+  // a map zoom when features are added to it.
+  areaRatio?: number;
+}
 
 /**
  * This strategy loads a store's features into it's layer counterpart.
@@ -13,7 +25,7 @@ import { FeatureStoreStrategy } from './strategy';
  * Important: This strategy observes filtered entities, not raw entities. This
  * is not configurable yet.
  */
-export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
+export class FeatureStoreLoadingStrategy extends EntityStoreStrategy {
 
   /**
    * Subscription to the store's features
@@ -30,7 +42,7 @@ export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
    */
   bindStore(store: FeatureStore) {
     super.bindStore(store);
-    if (this.isActive() === true) {
+    if (this.active === true) {
       this.watchStore(store);
     }
   }
@@ -41,7 +53,7 @@ export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
    */
   unbindStore(store: FeatureStore) {
     super.unbindStore(store);
-    if (this.isActive() === true) {
+    if (this.active === true) {
       this.unwatchStore(store);
     }
   }
@@ -74,7 +86,7 @@ export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
       return;
     }
 
-    const subscription = store.view.all$()
+    const subscription = store.dataView.all$()
       .subscribe((features: Feature[]) => this.onFeaturesChange(features, store));
     this.stores$$.set(store, subscription);
   }
@@ -110,12 +122,12 @@ export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
     if (features.length === 0) {
       store.clearLayer();
     } else {
+      const motion = this.selectMotion(store);
       store.setLayerFeatures(
         features,
-        this.selectMotion(store),
+        motion,
         this.options.viewScale,
-        this.options.areaRatio,
-        this.options.getFeatureId
+        this.options.areaRatio
       );
     }
   }
@@ -131,12 +143,12 @@ export class FeatureStoreLoadingStrategy extends FeatureStoreStrategy {
     if (store.pristine === true) {
       // If features have just been loaded into the store, move/zoom on them
       return FeatureMotion.Default;
-    } else if (store.count > store.view.count) {
+    } else if (store.count > store.dataView.count) {
       // If features have been filtered, move/zoom on the remaining ones
       return FeatureMotion.Default;
-    } else {
-      // On insert, update or delete, do nothing
-      return FeatureMotion.None;
     }
+      
+    // On insert, update or delete, do nothing
+    return FeatureMotion.None;
   }
 }

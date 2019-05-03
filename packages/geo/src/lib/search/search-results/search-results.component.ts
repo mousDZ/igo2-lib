@@ -141,7 +141,7 @@ export class SearchResultsComponent implements OnInit, OnDestroy {
    * @internal
    */
   private liftResults(): Observable<{source: SearchSource; results: SearchResult[]}[]> {
-    return this.store.view.all$().pipe(
+    return this.store.dataView.all$().pipe(
       debounce((results: SearchResult[]) => {
         return results.length === 0 ? EMPTY : timer(200);
       }),

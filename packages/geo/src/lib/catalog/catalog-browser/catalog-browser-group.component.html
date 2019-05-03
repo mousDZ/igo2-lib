@@ -24,7 +24,7 @@
 </mat-list-item>
 
 <div #items>
-  <ng-template ngFor let-item [ngForOf]="store.view.all$() | async">
+  <ng-template ngFor let-item [ngForOf]="store.dataView.all$() | async">
     <ng-container *ngIf="isGroup(item)"></ng-container>
     <ng-container *ngIf="isLayer(item)">
       <igo-catalog-browser-layer

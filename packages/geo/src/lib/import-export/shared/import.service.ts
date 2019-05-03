@@ -9,6 +9,7 @@ import * as olformat from 'ol/format';
 import OlFeature from 'ol/Feature';
 
 import { Feature } from '../../feature/shared/feature.interfaces';
+import { Featurizer } from '../../feature/shared/featurizer';
 import { ImportInvalidFileError, ImportUnreadableFileError } from './import.errors';
 
 @Injectable({
@@ -165,28 +166,15 @@ export class ImportService {
       }
     }
 
-    const olFeatures = format.readFeatures(data, {
-      dataProjection: projectionIn,
-      featureProjection: projectionOut
-    });
-    const features = olFeatures.map((olFeature: OlFeature) => {
-      return Object.assign(GeoJSON.writeFeatureObject(olFeature), {
-        projection: projectionOut
-      });
-    });
-
-    return features;
+    const olFeatures = format.readFeatures(data);
+    const featurizer = new Featurizer({projectionIn, projectionOut});
+    return olFeatures.map((olFeature: OlFeature) => featurizer.fromOl);
   }
 
   private parseFeaturesFromGeoJSON(data: object, projectionOut: string): Feature[] {
     const olFormat = new olformat.GeoJSON();
     const olFeatures = olFormat.readFeatures(data);
-    const features = olFeatures.map((olFeature: OlFeature) => {
-      return Object.assign(olFormat.writeFeatureObject(olFeature), {
-        projection: projectionOut
-      });
-    });
-
-    return features;
+    const featurizer = new Featurizer({projectionOut});
+    return olFeatures.map((olFeature: OlFeature) => featurizer.fromOl);
   }
 }

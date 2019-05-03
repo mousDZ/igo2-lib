@@ -1,8 +1,13 @@
 import { ReplaySubject } from 'rxjs';
 
-import { EntityKey, EntityState, EntityStateManagerOptions } from './entity.interfaces';
+import { EntityKey, EntityState } from './entity.interfaces';
 import { getEntityId } from './entity.utils';
 import { EntityStore } from './store';
+
+export interface EntityStateManagerOptions {
+  getKey?: (entity: object) => EntityKey;
+  store?: EntityStore<object>;
+}
 
 /**
  * This class is used to track a store's entities state

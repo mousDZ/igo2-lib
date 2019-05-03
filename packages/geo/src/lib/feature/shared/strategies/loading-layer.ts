@@ -1,9 +1,13 @@
 import { unByKey } from 'ol/Observable';
 import { OlEvent } from 'ol/events/Event';
 
+import { EntityStoreStrategy, EntityStoreStrategyOptions } from '@igo2/common';
+import { FeatureMotion } from '../feature.enums';
+import { Feature } from '../feature.interfaces';
 import { FeatureStore } from '../store';
-import { FeatureStoreLoadingLayerStrategyOptions } from '../feature.interfaces';
-import { FeatureStoreStrategy } from './strategy';
+import { Featurizer } from '../featurizer';
+
+export interface FeatureStoreLoadingStrategyOptions extends EntityStoreStrategyOptions {}
 
 /**
  * This strategy loads a layer's features into it's store counterpart.
@@ -30,7 +34,7 @@ export class FeatureStoreLoadingLayerStrategy extends FeatureStoreStrategy {
    */
   bindStore(store: FeatureStore) {
     super.bindStore(store);
-    if (this.isActive() === true) {
+    if (this.active === true) {
       this.watchStore(store);
     }
   }
@@ -41,7 +45,7 @@ export class FeatureStoreLoadingLayerStrategy extends FeatureStoreStrategy {
    */
   unbindStore(store: FeatureStore) {
     super.unbindStore(store);
-    if (this.isActive() === true) {
+    if (this.active === true) {
       this.unwatchStore(store);
     }
   }
@@ -106,11 +110,13 @@ export class FeatureStoreLoadingLayerStrategy extends FeatureStoreStrategy {
    * @param store Feature store
    */
   private onSourceChanges(store: FeatureStore) {
+    const featurizer = new Featurizer();
     const olFeatures = store.layer.ol.getSource().getFeatures();
+    const features = olFeatures.map(featurizer.fromOl);
     if (olFeatures.length === 0) {
       store.clear();
     } else {
-      store.setStoreOlFeatures(olFeatures);
+      store.setStoreFeatures(features, FeatureMotion.None);
     }
   }
 }

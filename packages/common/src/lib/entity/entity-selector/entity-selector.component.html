@@ -4,7 +4,7 @@
     [placeholder]="placeholder"
     (selectionChange)="onSelectionChange($event)">
     <mat-option *ngIf="emptyText !== undefined">{{emptyText}}</mat-option>
-    <ng-template ngFor let-entity [ngForOf]="store.view.all$() | async">
+    <ng-template ngFor let-entity [ngForOf]="store.dataView.all$() | async">
       <mat-option [value]="entity">
         {{titleAccessor(entity)}}
       </mat-option>

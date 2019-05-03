@@ -1,5 +1,6 @@
-import { FeatureStoreStrategyOptions } from '../feature.interfaces';
-import { FeatureStore } from '../store';
+import { EntityStore } from './store';
+
+export interface EntityStoreStrategyOptions {}
 
 /**
  * Strategies or responsible of synchronizing a feature store and a layer.
@@ -9,28 +10,24 @@ import { FeatureStore } from '../store';
  *
  * At creation, strategy is inactive and needs to be manually activated.
  */
-export class FeatureStoreStrategy {
+export class EntityStoreStrategy {
 
   /**
-   * Feature store
+   * Entity store
    * @internal
    */
-  protected stores: FeatureStore[] = [];
+  protected stores: EntityStore[] = [];
 
   /**
    * Whether this strategy is active
    * @internal
    */
-  protected active = false;
+  get active(): boolean { return this._active; }
+  private _active: boolean = false;
 
-  constructor(protected options: FeatureStoreStrategyOptions = {}) {
+  constructor(protected options: EntityStoreStrategyOptions = {}) {
     this.options = options;
   }
-
-  /**
-   * Whether this strategy is active
-   */
-  isActive(): boolean { return this.active; }
 
   /**
    * Activate the strategy. If it's already active, it'll be deactivated
@@ -40,7 +37,7 @@ export class FeatureStoreStrategy {
     if (this.active === true) {
       this.doDeactivate();
     }
-    this.active = true;
+    this._active = true;
     this.doActivate();
   }
 
@@ -49,15 +46,15 @@ export class FeatureStoreStrategy {
    * and activated again.
    */
   deactivate() {
-    this.active = false;
+    this._active = false;
     this.doDeactivate();
   }
 
   /**
    * Bind this strategy to a store
-   * @param store Feature store
+   * @param store Entity store
    */
-  bindStore(store: FeatureStore) {
+  bindStore(store: EntityStore) {
     if (this.stores.indexOf(store) < 0) {
       this.stores.push(store);
     }
@@ -65,9 +62,9 @@ export class FeatureStoreStrategy {
 
   /**
    * Unbind this strategy from store
-   * @param store Feature store
+   * @param store Entity store
    */
-  unbindStore(store: FeatureStore) {
+  unbindStore(store: EntityStore) {
     const index = this.stores.indexOf(store);
     if (index >= 0) {
       this.stores.splice(index, 1);
