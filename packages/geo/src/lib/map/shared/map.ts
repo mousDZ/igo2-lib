@@ -409,5 +409,4 @@ export class IgoMap {
       this.geolocation.setTracking(false);
     }
   }
-
 }

@@ -9,3 +9,6 @@ export * from './ilayer.providers';
 export * from './nominatim';
 export * from './nominatim.interfaces';
 export * from './nominatim.providers';
+export * from './coordinates';
+export * from './coordinates.interfaces';
+export * from './coordinates.providers';
